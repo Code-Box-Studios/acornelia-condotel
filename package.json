@@ -1,0 +1,58 @@
+{
+  "name": "acornelia-condotel",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.5.1",
+  "engines": {
+    "node": "^24.22.1",
+    "pnpm": "12.5.1"
+  },
+  "scripts": {
+    "dev": "next dev --port 3042",
+    "build": "next build",
+    "start": "next start --port 3042",
+    "lint": "eslint src tests scripts payload.config.ts next.config.ts playwright.config.ts vitest*.config.ts eslint.config.mjs --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "test:unit": "vitest run --config vitest.unit.config.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:contract": "vitest run --config vitest.contract.config.ts",
+    "test:e2e": "playwright test",
+    "test:sandbox": "vitest run --config vitest.sandbox.config.ts",
+    "test:recovery": "vitest run --config vitest.recovery.config.ts",
+    "payload": "payload",
+    "generate:types": "payload generate:types",
+    "generate:importmap": "payload generate:importmap",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "local:setup": "tsx scripts/local-setup.ts",
+    "seed:development": "tsx scripts/seed-development.ts",
+    "verify:acceptance": "tsx scripts/verify-acceptance.ts"
+  },
+  "dependencies": {
+    "@payloadcms/db-postgres": "3.93.0",
+    "@payloadcms/email-nodemailer": "3.93.0",
+    "@payloadcms/next": "3.93.0",
+    "@payloadcms/richtext-lexical": "3.93.0",
+    "graphql": "16.11.0",
+    "next": "16.4.6",
+    "payload": "3.93.0",
+    "pg": "8.23.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "sharp": "^0.34.5",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0",
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.15.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9.39.0",
+    "eslint-config-next": "16.4.6",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "5.1.0"
+  }
+}

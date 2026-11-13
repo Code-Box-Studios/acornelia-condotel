@@ -1,0 +1,16 @@
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
+
+# Application dependencies, secrets and regenerable output.
+node_modules/
+.next/
+.env
+.env.*
+!.env.example
+.superpowers/
+coverage/
+test-results/
+playwright-report/
+*.tsbuildinfo
+__pycache__/
+media/
