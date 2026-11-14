@@ -178,3 +178,8 @@ The static public review share now includes guest stories/upcoming events and an
 ## Implementation started — November 13, 2026
 
 The user authorized the reviewed implementation plan and commits/pushes on `main`. Follow [implementation progress](implementation-progress.md) for current commands and evidence. Root scripts now exist; `pnpm local:setup` creates a protected local `.env` without replacing existing configuration, and `docker compose up -d database` starts only the dedicated Acornelia PostgreSQL service. Do not interpret local foundation checks as proof of hosted providers, production readiness or approval of unresolved business rules.
+
+
+## Local database proof — November 14, 2026
+
+The two foundation migrations and the PostgreSQL rollback/concurrency/exclusion proof passed locally, with an optimized Next build. See [current implementation evidence](implementation-progress.md#database-proof--november-14-2026). Use `pnpm db:migrate`; it currently refuses hosted targets. `pnpm test` uses only a verified `acornelia*_test` database on the dedicated local port 55432 and creates/removes its own fresh-upgrade fixture database. This is not production migration approval or hosted pooler verification.

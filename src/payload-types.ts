@@ -68,6 +68,14 @@ export interface Config {
   blocks: {};
   collections: {
     'staff-users': StaffUser;
+    rooms: Room;
+    bookings: Booking;
+    allocations: Allocation;
+    'offer-allocations': OfferAllocation;
+    'payment-attempts': PaymentAttempt;
+    'payment-transactions': PaymentTransaction;
+    'audit-entries': AuditEntry;
+    'work-items': WorkItem;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -76,6 +84,14 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     'staff-users': StaffUsersSelect<false> | StaffUsersSelect<true>;
+    rooms: RoomsSelect<false> | RoomsSelect<true>;
+    bookings: BookingsSelect<false> | BookingsSelect<true>;
+    allocations: AllocationsSelect<false> | AllocationsSelect<true>;
+    'offer-allocations': OfferAllocationsSelect<false> | OfferAllocationsSelect<true>;
+    'payment-attempts': PaymentAttemptsSelect<false> | PaymentAttemptsSelect<true>;
+    'payment-transactions': PaymentTransactionsSelect<false> | PaymentTransactionsSelect<true>;
+    'audit-entries': AuditEntriesSelect<false> | AuditEntriesSelect<true>;
+    'work-items': WorkItemsSelect<false> | WorkItemsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -145,6 +161,187 @@ export interface StaffUser {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rooms".
+ */
+export interface Room {
+  id: string;
+  label: string;
+  onSale?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookings".
+ */
+export interface Booking {
+  id: string;
+  code?: string | null;
+  ownerCustomerId?: string | null;
+  status: 'held' | 'confirmed' | 'cancelled' | 'completed' | 'expired';
+  revision: number;
+  arrival: string;
+  departure: string;
+  acceptedQuote:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  contact:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  stayingGuest?: string | null;
+  source: 'website' | 'phone' | 'walk-in';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "allocations".
+ */
+export interface Allocation {
+  id: string;
+  room: string | Room;
+  booking?: (string | null) | Booking;
+  arrival: string;
+  departure: string;
+  purpose: 'hold' | 'booking' | 'block';
+  released: boolean;
+  deadline?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "offer-allocations".
+ */
+export interface OfferAllocation {
+  id: string;
+  offerVersionId: string;
+  booking: string | Booking;
+  allocationKey: string;
+  state: 'reserved' | 'consumed' | 'released';
+  customerId: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-attempts".
+ */
+export interface PaymentAttempt {
+  id: string;
+  booking: string | Booking;
+  merchantReference: string;
+  commandKey: string;
+  fingerprint: string;
+  amountMinor: string;
+  currency: string;
+  acceptedContext:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  purpose: 'booking' | 'change';
+  revision: number;
+  state: 'preparing' | 'ready' | 'unknown' | 'pending' | 'succeeded' | 'closed';
+  deadline: string;
+  checkoutUrl?: string | null;
+  providerCheckoutId?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-transactions".
+ */
+export interface PaymentTransaction {
+  id: string;
+  providerPaymentId: string;
+  merchantReference: string;
+  booking?: (string | null) | Booking;
+  attempt?: (string | null) | PaymentAttempt;
+  environment: 'sandbox' | 'production' | 'offline';
+  amountMinor: string;
+  currency: string;
+  status: 'pending' | 'authorized' | 'collected' | 'failed' | 'voided';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-entries".
+ */
+export interface AuditEntry {
+  id: string;
+  actor:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  action: string;
+  recordType: string;
+  recordId?: string | null;
+  outcome: string;
+  safeChanges?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "work-items".
+ */
+export interface WorkItem {
+  id: string;
+  semanticKey: string;
+  kind: 'create-checkout' | 'reconcile-payment' | 'expire-hold' | 'email' | 'refund' | 'enquiry';
+  payload:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  state: 'ready' | 'leased' | 'done' | 'uncertain' | 'failed';
+  generation: number;
+  attempts: number;
+  leaseOwner?: string | null;
+  leaseExpires?: string | null;
+  availableAt: string;
+  lastError?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -166,10 +363,43 @@ export interface PayloadKv {
  */
 export interface PayloadLockedDocument {
   id: string;
-  document?: {
-    relationTo: 'staff-users';
-    value: string | StaffUser;
-  } | null;
+  document?:
+    | ({
+        relationTo: 'staff-users';
+        value: string | StaffUser;
+      } | null)
+    | ({
+        relationTo: 'rooms';
+        value: string | Room;
+      } | null)
+    | ({
+        relationTo: 'bookings';
+        value: string | Booking;
+      } | null)
+    | ({
+        relationTo: 'allocations';
+        value: string | Allocation;
+      } | null)
+    | ({
+        relationTo: 'offer-allocations';
+        value: string | OfferAllocation;
+      } | null)
+    | ({
+        relationTo: 'payment-attempts';
+        value: string | PaymentAttempt;
+      } | null)
+    | ({
+        relationTo: 'payment-transactions';
+        value: string | PaymentTransaction;
+      } | null)
+    | ({
+        relationTo: 'audit-entries';
+        value: string | AuditEntry;
+      } | null)
+    | ({
+        relationTo: 'work-items';
+        value: string | WorkItem;
+      } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'staff-users';
@@ -236,6 +466,131 @@ export interface StaffUsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rooms_select".
+ */
+export interface RoomsSelect<T extends boolean = true> {
+  label?: T;
+  onSale?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookings_select".
+ */
+export interface BookingsSelect<T extends boolean = true> {
+  code?: T;
+  ownerCustomerId?: T;
+  status?: T;
+  revision?: T;
+  arrival?: T;
+  departure?: T;
+  acceptedQuote?: T;
+  contact?: T;
+  stayingGuest?: T;
+  source?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "allocations_select".
+ */
+export interface AllocationsSelect<T extends boolean = true> {
+  room?: T;
+  booking?: T;
+  arrival?: T;
+  departure?: T;
+  purpose?: T;
+  released?: T;
+  deadline?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "offer-allocations_select".
+ */
+export interface OfferAllocationsSelect<T extends boolean = true> {
+  offerVersionId?: T;
+  booking?: T;
+  allocationKey?: T;
+  state?: T;
+  customerId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-attempts_select".
+ */
+export interface PaymentAttemptsSelect<T extends boolean = true> {
+  booking?: T;
+  merchantReference?: T;
+  commandKey?: T;
+  fingerprint?: T;
+  amountMinor?: T;
+  currency?: T;
+  acceptedContext?: T;
+  purpose?: T;
+  revision?: T;
+  state?: T;
+  deadline?: T;
+  checkoutUrl?: T;
+  providerCheckoutId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-transactions_select".
+ */
+export interface PaymentTransactionsSelect<T extends boolean = true> {
+  providerPaymentId?: T;
+  merchantReference?: T;
+  booking?: T;
+  attempt?: T;
+  environment?: T;
+  amountMinor?: T;
+  currency?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-entries_select".
+ */
+export interface AuditEntriesSelect<T extends boolean = true> {
+  actor?: T;
+  action?: T;
+  recordType?: T;
+  recordId?: T;
+  outcome?: T;
+  safeChanges?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "work-items_select".
+ */
+export interface WorkItemsSelect<T extends boolean = true> {
+  semanticKey?: T;
+  kind?: T;
+  payload?: T;
+  state?: T;
+  generation?: T;
+  attempts?: T;
+  leaseOwner?: T;
+  leaseExpires?: T;
+  availableAt?: T;
+  lastError?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

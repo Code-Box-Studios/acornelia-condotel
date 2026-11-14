@@ -135,3 +135,6 @@ The guest prototype was shared publicly on [ht-ml.app](https://ab73db76.ht-ml.ap
 The user authorized implementation and pushes on `main`. The root application now locks Next.js 16.4.6, Payload and official adapters 3.93.0, React 19.3.1, TypeScript 5.9.3, Vitest 5.1.0 and Playwright 1.65.0. Installed Node 24.22.1 and pnpm 12.5.1 match the toolchain. Foundation unit, lint and type checks passed; database/build/provider proofs remain separate.
 
 A dedicated local PostgreSQL 17 container supports isolated development and transaction testing. It does not replace the selected Supabase production database. Production media storage and scheduled runner remain unresolved. No paid tier, new provider, subscription or price change was selected. See [implementation progress](../operations/implementation-progress.md).
+
+
+The November 14 database proof pins direct `pg` and `@types/pg` to 8.20.0, matching the Payload adapter, rather than retaining independently newer driver/types. Payload uses UUID keys, explicit serializable transaction contexts, disabled schema push and reviewed PostgreSQL exclusions/checks. Local proof and build pass; hosted Supabase/Vercel behavior remains a separate integration gate. No provider pricing or subscriptions changed.
