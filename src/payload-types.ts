@@ -68,6 +68,8 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    'room-types': RoomType;
+    media: Media;
     'staff-users': StaffUser;
     customers: Customer;
     rooms: Room;
@@ -85,6 +87,8 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    'room-types': RoomTypesSelect<false> | RoomTypesSelect<true>;
+    media: MediaSelect<false> | MediaSelect<true>;
     'staff-users': StaffUsersSelect<false> | StaffUsersSelect<true>;
     customers: CustomersSelect<false> | CustomersSelect<true>;
     rooms: RoomsSelect<false> | RoomsSelect<true>;
@@ -104,8 +108,16 @@ export interface Config {
     defaultIDType: string;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    property: Property;
+    'site-pages': SitePage;
+    policies: Policy;
+  };
+  globalsSelect: {
+    property: PropertySelect<false> | PropertySelect<true>;
+    'site-pages': SitePagesSelect<false> | SitePagesSelect<true>;
+    policies: PoliciesSelect<false> | PoliciesSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -150,6 +162,72 @@ export interface CustomerAuthOperations {
   unlock: {
     email: string;
     password: string;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "room-types".
+ */
+export interface RoomType {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  maxGuests?: number | null;
+  bedDescription?: string | null;
+  amenities?:
+    | {
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  gallery?:
+    | {
+        image: string | Media;
+        id?: string | null;
+      }[]
+    | null;
+  sortOrder?: number | null;
+  synthetic?: boolean | null;
+  privateNotes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * Local uploads persist on the development disk. Production storage must be configured before uploading.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: string;
+  alt: string;
+  source: string;
+  license: string;
+  accessClass: 'private' | 'public';
+  status: 'uploading' | 'ready' | 'deleting' | 'failed';
+  synthetic?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
   };
 }
 /**
@@ -417,6 +495,14 @@ export interface PayloadLockedDocument {
   id: string;
   document?:
     | ({
+        relationTo: 'room-types';
+        value: string | RoomType;
+      } | null)
+    | ({
+        relationTo: 'media';
+        value: string | Media;
+      } | null)
+    | ({
         relationTo: 'staff-users';
         value: string | StaffUser;
       } | null)
@@ -507,6 +593,72 @@ export interface PayloadMigration {
   batch?: number | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "room-types_select".
+ */
+export interface RoomTypesSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  description?: T;
+  maxGuests?: T;
+  bedDescription?: T;
+  amenities?:
+    | T
+    | {
+        label?: T;
+        id?: T;
+      };
+  gallery?:
+    | T
+    | {
+        image?: T;
+        id?: T;
+      };
+  sortOrder?: T;
+  synthetic?: T;
+  privateNotes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media_select".
+ */
+export interface MediaSelect<T extends boolean = true> {
+  alt?: T;
+  source?: T;
+  license?: T;
+  accessClass?: T;
+  status?: T;
+  synthetic?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumbnail?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -725,6 +877,104 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "property".
+ */
+export interface Property {
+  id: string;
+  name: string;
+  tagline?: string | null;
+  description?: string | null;
+  hero?: (string | null) | Media;
+  address?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  mapUrl?: string | null;
+  /**
+   * Local review fixture. Production publication rejects this flag.
+   */
+  synthetic?: boolean | null;
+  /**
+   * Never returned to public pages.
+   */
+  privateNotes?: string | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-pages".
+ */
+export interface SitePage {
+  id: string;
+  about?: string | null;
+  contact?: string | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Public copy only. Commercial rules require separately approved, versioned booking configuration.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "policies".
+ */
+export interface Policy {
+  id: string;
+  houseRules?: string | null;
+  cancellation?: string | null;
+  privacy?: string | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "property_select".
+ */
+export interface PropertySelect<T extends boolean = true> {
+  name?: T;
+  tagline?: T;
+  description?: T;
+  hero?: T;
+  address?: T;
+  email?: T;
+  phone?: T;
+  mapUrl?: T;
+  synthetic?: T;
+  privateNotes?: T;
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-pages_select".
+ */
+export interface SitePagesSelect<T extends boolean = true> {
+  about?: T;
+  contact?: T;
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "policies_select".
+ */
+export interface PoliciesSelect<T extends boolean = true> {
+  houseRules?: T;
+  cancellation?: T;
+  privacy?: T;
+  _status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

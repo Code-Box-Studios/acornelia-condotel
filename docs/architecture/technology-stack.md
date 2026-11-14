@@ -138,3 +138,8 @@ A dedicated local PostgreSQL 17 container supports isolated development and tran
 
 
 The November 14 database proof pins direct `pg` and `@types/pg` to 8.20.0, matching the Payload adapter, rather than retaining independently newer driver/types. Payload uses UUID keys, explicit serializable transaction contexts, disabled schema push and reviewed PostgreSQL exclusions/checks. Local proof and build pass; hosted Supabase/Vercel behavior remains a separate integration gate. No provider pricing or subscriptions changed.
+
+
+### Local media implementation — November 14, 2026
+
+A local Payload filesystem adapter is implemented for development and isolated testing. This adds no hosted storage subscription and makes no production cost claim. Media metadata records source, license, description, synthetic status, access class and storage state. Production uploads and local disk storage are disabled until Decision 10 approves a durable adapter; no storage provider was provisioned. The public catalog has separate room types, leaving physical-room allocation records under controlled booking commands.

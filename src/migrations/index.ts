@@ -3,6 +3,7 @@ import * as migration_20261114_030640_reservation_guards from './20261114_030640
 import * as migration_20261114_032157_customer_identities from './20261114_032157_customer_identities';
 import * as migration_20261114_032409_staff_access_boundary from './20261114_032409_staff_access_boundary';
 import * as migration_20261114_035520_audit_immutability from './20261114_035520_audit_immutability';
+import * as migration_20261114_044747_public_content from './20261114_044747_public_content';
 
 export const migrations = [
   {
@@ -28,6 +29,11 @@ export const migrations = [
   {
     up: migration_20261114_035520_audit_immutability.up,
     down: migration_20261114_035520_audit_immutability.down,
-    name: '20261114_035520_audit_immutability'
+    name: '20261114_035520_audit_immutability',
+  },
+  {
+    up: migration_20261114_044747_public_content.up,
+    down: migration_20261114_044747_public_content.down,
+    name: '20261114_044747_public_content'
   },
 ];

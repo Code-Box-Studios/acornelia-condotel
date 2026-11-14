@@ -193,3 +193,12 @@ See [identity boundary and bootstrap](implementation-progress.md#identity-bounda
 ## Protected action-log evidence — November 14, 2026
 
 [Protected-log implementation evidence](implementation-progress.md#protected-logs--november-14-2026) records transactional rollback, developer-only API/page exports, append-only SQL protection, secret rejection and real browser denial tests. Incoming request URL logging is disabled. The registry that authorizes internal requests is shared across Next module instances, while authorization remains tied to server-owned request identity. Current checks pass locally; production deployment, retention and recovery verification remain pending.
+
+
+### Local content and media — November 14, 2026
+
+After local migrations, run `pnpm seed:development` to create the provisional Warm Boutique review content. It requires `APP_ENV=development`, `DEVELOPMENT_FIXTURES=true`, and the exact local `acornelia_dev` database on port 55432. Existing CMS content is preserved. If no staff exist, the command creates the first local developer in an audited transaction and stores generated access details in `.local/development-access.json` with mode 0600. It never promotes an existing account or prints a password. This file is ignored and excluded from server build traces.
+
+Development images persist in `media/`; isolated tests use `.local/test-media/`. Preserve development images with the database during backup. Both locations are excluded from server build traces. Public media routes authorize each new request; withdrawing a file does not remove previously downloaded copies. Failed upload/delete records remain private and require repair or a deliberate new upload. Production local storage/uploads remain disabled pending the hosted media adapter decision and integration proof.
+
+Verified local checks cover published versus draft projections, private media denial, sanitized copy, required provenance/descriptions, global edit rollback on audit failure, and failed-upload recovery. Chromium desktop/mobile requests proved known private image URLs return 403, public images load, and withdrawal returns 403 again. These checks do not prove hosted object-storage access, durability or deletion recovery.

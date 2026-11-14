@@ -13,7 +13,7 @@ test-results/
 playwright-report/
 *.tsbuildinfo
 __pycache__/
-media/
+/media/
 
 .next-e2e/
 .local/
