@@ -57,3 +57,6 @@ Media requires an alternative description, source and license record. JPEG, PNG 
 The implemented adapter is for the dedicated local development/test filesystem only. Upload intents are saved before file work; failures retain a private recovery record. Deletion is audited and a failed operation retains a private record for repair. Production uploads and local disk storage are disabled until Decision 10 selects and verifies durable hosted storage. Local media must not be mistaken for durable Vercel storage.
 
 Development seeding creates labeled synthetic content only on the guarded local fixture target and preserves existing CMS records. The Warm Boutique composition is a provisional local preview, not a selected production design. Concept-photo provenance remains in the design records; verified property photos and owner-approved copy are still required for release.
+
+
+The homepage heading and optional accent line are now configured property fields. Staff can change them with the same draft/publication and atomic audit protections. An absent capacity stays absent in the public projection; no guest limit is invented. Some supporting marketing section headings remain code-defined in this stage; the editor exposes only the controls listed above, and further supported blocks remain later work.

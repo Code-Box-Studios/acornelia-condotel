@@ -1,0 +1,4 @@
+import Image from 'next/image'
+import Link from 'next/link'
+import type {PublicRoom} from '@/content/catalog'
+export function RoomCard({room}:{room:PublicRoom}){const image=room.images[0];return <article className="room-card"><Link href={`/rooms/${room.slug}`} className="room-image" aria-label={`Explore ${room.name}`}>{image?<Image src={image.url} alt={image.alt} fill sizes="(max-width: 700px) 100vw, 50vw" unoptimized/>:<div className="image-empty">A glimpse is on its way</div>}<span className="image-arrow" aria-hidden="true">↗</span></Link><div className="room-card-content"><p className="eyebrow">A space for your stay</p><h3><Link href={`/rooms/${room.slug}`}>{room.name}</Link></h3><p>{room.description}</p><div className="room-meta">{room.maxGuests!==null&&<span>Up to {room.maxGuests} guests</span>}{room.bedDescription&&<span>{room.bedDescription}</span>}</div></div></article>}

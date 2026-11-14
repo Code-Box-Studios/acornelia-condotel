@@ -1,0 +1,40 @@
+{
+  "recordedAt": "2026-11-14T05:10:14.487031+00:00",
+  "scope": "Task 06 local public website; not a production deployment",
+  "baseCommit": "4b5bd39b90976c9de45855770fa572c34af8e4ac",
+  "design": "Warm Boutique, provisional local preview; production choice pending",
+  "checks": {
+    "vitest": {
+      "passed": 57,
+      "command": "pnpm test"
+    },
+    "playwright": {
+      "passed": 28,
+      "command": "pnpm test:e2e",
+      "projects": [
+        "Desktop Chrome",
+        "Pixel 7 Chromium emulation"
+      ]
+    },
+    "lint": "passed",
+    "typescript": "passed",
+    "optimizedBuild": "passed",
+    "knownPrivateImageUrl": "403; published 200; withdrawn 403",
+    "missingRoom": "HTTP 404",
+    "contrast": "Key small text and buttons at least 4.5:1 in light and dark",
+    "manualScreenshots": [
+      ".local/site-desktop-light.png",
+      ".local/site-desktop-dark.png",
+      ".local/site-mobile-light.png",
+      ".local/site-mobile-dark.png"
+    ]
+  },
+  "limits": [
+    "Synthetic local property content and concept photographs",
+    "No availability, pricing, reservation or payment from the search handoff",
+    "Production media, approved property content and design remain gated",
+    "Safari, WebKit and actual-device UAT remain pending",
+    "Development navigation emits a framework script-render warning; theme persistence and interactions passed",
+    "Hosted providers and production deployment are unverified"
+  ]
+}

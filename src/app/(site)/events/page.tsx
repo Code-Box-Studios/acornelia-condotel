@@ -1,0 +1,3 @@
+import Link from 'next/link'
+export const metadata={title:'Stories & events'}
+export default function Events(){return <main id="main" className="shell section"><header className="page-heading"><p className="eyebrow">At Acornelia</p><h1>Little moments.<br/>Lovely memories.</h1><p>Stories from here, and things to look forward to.</p></header><section className="status-panel"><h2>A new story is on its way.</h2><p>Published stories and upcoming events will appear here.</p><Link href="/contact" className="button secondary">Ask about a gathering <span aria-hidden="true">↗</span></Link></section></main>}

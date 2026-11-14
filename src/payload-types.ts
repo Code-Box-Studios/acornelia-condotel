@@ -885,6 +885,11 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
 export interface Property {
   id: string;
   name: string;
+  /**
+   * Homepage heading. Line breaks are supported.
+   */
+  headline?: string | null;
+  headlineAccent?: string | null;
   tagline?: string | null;
   description?: string | null;
   hero?: (string | null) | Media;
@@ -937,6 +942,8 @@ export interface Policy {
  */
 export interface PropertySelect<T extends boolean = true> {
   name?: T;
+  headline?: T;
+  headlineAccent?: T;
   tagline?: T;
   description?: T;
   hero?: T;

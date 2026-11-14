@@ -4,6 +4,7 @@ import * as migration_20261114_032157_customer_identities from './20261114_03215
 import * as migration_20261114_032409_staff_access_boundary from './20261114_032409_staff_access_boundary';
 import * as migration_20261114_035520_audit_immutability from './20261114_035520_audit_immutability';
 import * as migration_20261114_044747_public_content from './20261114_044747_public_content';
+import * as migration_20261114_050156_public_headline from './20261114_050156_public_headline';
 
 export const migrations = [
   {
@@ -34,6 +35,11 @@ export const migrations = [
   {
     up: migration_20261114_044747_public_content.up,
     down: migration_20261114_044747_public_content.down,
-    name: '20261114_044747_public_content'
+    name: '20261114_044747_public_content',
+  },
+  {
+    up: migration_20261114_050156_public_headline.up,
+    down: migration_20261114_050156_public_headline.down,
+    name: '20261114_050156_public_headline'
   },
 ];
