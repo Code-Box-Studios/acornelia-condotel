@@ -4,3 +4,5 @@ allowBuilds:
   sharp: true
   esbuild: true
   '@swc/core': true
+patchedDependencies:
+  '@payloadcms/drizzle@3.93.0': patches/@payloadcms__drizzle@3.93.0.patch

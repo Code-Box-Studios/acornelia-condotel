@@ -1,0 +1,5 @@
+import Image from 'next/image'
+import Link from 'next/link'
+import type {PublicPost} from '@/content/posts'
+export function editorialDate(value:string){return new Intl.DateTimeFormat('en',{timeZone:'UTC',day:'numeric',month:'long',year:'numeric'}).format(new Date(value.slice(0,10)+'T00:00:00Z'))}
+export function PostCard({post}:{post:PublicPost}){return <article className="post-card">{post.cover&&<div className="post-image"><Image src={post.cover.url} alt={post.cover.alt} fill sizes="(max-width: 600px) 100vw, 33vw" unoptimized/></div>}<div className="post-card-body"><p className="eyebrow">{post.type==='event'?'Event':'Story'}{post.type==='event'&&post.eventDate?' · '+editorialDate(post.eventDate):post.publishedAt?' · '+editorialDate(post.publishedAt):''}</p><h2>{post.title}</h2><p>{post.summary}</p><Link href={`/updates/${post.slug}`} className="text-link" aria-label={`Read ${post.title}`}>Read {post.type==='event'?'event details':'the story'} <span aria-hidden="true">↗</span></Link></div></article>}

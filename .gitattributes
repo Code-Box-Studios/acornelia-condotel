@@ -2,3 +2,5 @@
 *.md whitespace=-blank-at-eol
 # Preserve upstream font license files verbatim.
 public/fonts/*OFL.txt whitespace=-blank-at-eol
+# Unified patch context lines contain the required diff prefix.
+patches/*.patch whitespace=-blank-at-eol

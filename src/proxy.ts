@@ -28,4 +28,4 @@ export function proxy(request:NextRequest){
   }
   return privateResponse(NextResponse.next())
 }
-export const config={matcher:['/api/:path*','/admin/:path*','/account/:path*','/booking/:path*','/book/:path*']}
+export const config={matcher:['/api/:path*','/admin/:path*','/account/:path*','/booking/:path*','/book/:path*','/updates/preview/:path*']}

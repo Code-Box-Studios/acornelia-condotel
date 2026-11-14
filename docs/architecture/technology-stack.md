@@ -143,3 +143,11 @@ The November 14 database proof pins direct `pg` and `@types/pg` to 8.20.0, match
 ### Local media implementation — November 14, 2026
 
 A local Payload filesystem adapter is implemented for development and isolated testing. This adds no hosted storage subscription and makes no production cost claim. Media metadata records source, license, description, synthetic status, access class and storage state. Production uploads and local disk storage are disabled until Decision 10 approves a durable adapter; no storage provider was provisioned. The public catalog has separate room types, leaving physical-room allocation records under controlled booking commands.
+
+
+### Pinned database-adapter correction — November 14, 2026
+
+The Payload Drizzle 3.93.0 dependency has a versioned pnpm patch for commit-error propagation. A real PostgreSQL test caught false success after a commit-time rollback; the patched adapter passes deferred-error and concurrent-submission proofs. See the [cause, patch and upgrade requirements](2026-11-14-transaction-commit-fix.md). This changes no provider selection or subscription.
+
+
+The test toolchain now pins Vite 8.3.8 and esbuild 0.28.2 explicitly. The prior lockfile bound one Vite instance to an incompatible esbuild peer through another dependency. Explicit compatible test dependencies corrected that binding; `pnpm peers check` reports no peer issues. Existing deprecated transitive CLI packages remain upstream dependencies.

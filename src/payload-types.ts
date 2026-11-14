@@ -68,6 +68,8 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    posts: Post;
+    enquiries: Enquiry;
     'room-types': RoomType;
     media: Media;
     'staff-users': StaffUser;
@@ -87,6 +89,8 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    posts: PostsSelect<false> | PostsSelect<true>;
+    enquiries: EnquiriesSelect<false> | EnquiriesSelect<true>;
     'room-types': RoomTypesSelect<false> | RoomTypesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     'staff-users': StaffUsersSelect<false> | StaffUsersSelect<true>;
@@ -166,28 +170,24 @@ export interface CustomerAuthOperations {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "room-types".
+ * via the `definition` "posts".
  */
-export interface RoomType {
+export interface Post {
   id: string;
-  name: string;
+  type: 'story' | 'event';
+  title: string;
   slug: string;
-  description?: string | null;
-  maxGuests?: number | null;
-  bedDescription?: string | null;
-  amenities?:
-    | {
-        label: string;
-        id?: string | null;
-      }[]
-    | null;
-  gallery?:
-    | {
-        image: string | Media;
-        id?: string | null;
-      }[]
-    | null;
-  sortOrder?: number | null;
+  summary?: string | null;
+  body?: string | null;
+  /**
+   * Property calendar date, YYYY-MM-DD. Required for published events.
+   */
+  eventDate?: string | null;
+  cover?: (string | null) | Media;
+  publishedAt?: string | null;
+  /**
+   * Local review fixture; production excludes and refuses publication.
+   */
   synthetic?: boolean | null;
   privateNotes?: string | null;
   updatedAt: string;
@@ -229,6 +229,71 @@ export interface Media {
       filename?: string | null;
     };
   };
+}
+/**
+ * An enquiry does not reserve a room or confirm payment.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "enquiries".
+ */
+export interface Enquiry {
+  id: string;
+  reference: string;
+  nonce: string;
+  fingerprint: string;
+  emailHash: string;
+  submittedAt: string;
+  contact:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  postSnapshot?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  state: 'received' | 'delivery-pending' | 'delivered' | 'delivery-failed' | 'closed';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "room-types".
+ */
+export interface RoomType {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  maxGuests?: number | null;
+  bedDescription?: string | null;
+  amenities?:
+    | {
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  gallery?:
+    | {
+        image: string | Media;
+        id?: string | null;
+      }[]
+    | null;
+  sortOrder?: number | null;
+  synthetic?: boolean | null;
+  privateNotes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -495,6 +560,14 @@ export interface PayloadLockedDocument {
   id: string;
   document?:
     | ({
+        relationTo: 'posts';
+        value: string | Post;
+      } | null)
+    | ({
+        relationTo: 'enquiries';
+        value: string | Enquiry;
+      } | null)
+    | ({
         relationTo: 'room-types';
         value: string | RoomType;
       } | null)
@@ -593,6 +666,41 @@ export interface PayloadMigration {
   batch?: number | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "posts_select".
+ */
+export interface PostsSelect<T extends boolean = true> {
+  type?: T;
+  title?: T;
+  slug?: T;
+  summary?: T;
+  body?: T;
+  eventDate?: T;
+  cover?: T;
+  publishedAt?: T;
+  synthetic?: T;
+  privateNotes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "enquiries_select".
+ */
+export interface EnquiriesSelect<T extends boolean = true> {
+  reference?: T;
+  nonce?: T;
+  fingerprint?: T;
+  emailHash?: T;
+  submittedAt?: T;
+  contact?: T;
+  postSnapshot?: T;
+  state?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {usePathname} from 'next/navigation'
 import {ThemeToggle} from './ThemeToggle'
-const links=[['/','Home'],['/rooms','Our stays'],['/events','Stories & events'],['/about','Our story'],['/contact','Contact']]
+const links=[['/','Home'],['/rooms','Our stays'],['/updates','Stories & events'],['/about','Our story'],['/contact','Contact']]
 export function SiteHeader({name}:{name:string}){
   const path=usePathname(),dialog=useRef<HTMLDialogElement>(null),[open,setOpen]=useState(false)
   function close(){dialog.current?.close();setOpen(false)}

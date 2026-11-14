@@ -12,7 +12,8 @@ Started November 13, 2026, following the user's instruction to implement the rev
 - Task 04: protected transactional action logging implemented. The current suite has 51 passing tests and 14 passing Chromium desktop/mobile browser checks. TypeScript, lint, reviewed local migrations and the optimized build pass.
 - Task 05: property/page/policy globals, published room-type projections and local durable media are implemented. The full suite has 57 passing tests, with 16 Chromium desktop/mobile browser checks. TypeScript, lint and the optimized build passed. Failed upload/delete recovery was tested against the isolated local filesystem; hosted storage remains gated.
 - Task 06: the public Warm Boutique composition is implemented as a provisional local review. Home, room discovery/detail, about, contact, policy pages, image gallery, light/dark controls and validated search handoff are built. The full current suite has 57 passing tests and 28 Chromium desktop/mobile checks; lint, TypeScript and the optimized build passed. Key text/button contrast passes 4.5:1 in both themes. Desktop/mobile light and dark screenshots were inspected. Production design, real content and live booking remain gated.
-- Tasks 07–29 remain pending. Persistent Stories, Events and enquiries are next.
+- Task 07: persistent Stories/Events, staff-only draft previews, immediate public withdrawal, filters and contextual/general enquiries are implemented. The combined suite has 68 passing tests and 32 Chromium desktop/mobile checks; lint, TypeScript and peer checks pass. The optimized build passed.
+- Tasks 08–29 remain pending. Optional customer access and checkout continuity are next.
 
 ## Decision status
 
@@ -56,6 +57,11 @@ Only developers can read/search/export the action log. Generated endpoints, coun
 
 `GET /api/developer/audit` supports action/type filters and cursor pagination. `format=csv` exports the selected page, up to 100 entries; the filename identifies it as a page and `X-Next-Cursor` exposes continuation when present. Each export records a separate audit event. This is a protected API foundation; the final staff/developer workspace remains a later task.
 
-Payload caches collection callbacks across Next bundles and development reloads. The in-process request capability registry therefore uses a process-wide WeakMap, shared by those callbacks; external JSON cannot supply its request-object keys. A real gateway test caught an earlier module-local registry mismatch, and the combined browser suite passed after the correction. Next incoming-request logging is disabled so private link URLs are not printed by the development server.
+Payload caches collection callbacks across Next bundles and development reloads. The in-process request capability registry therefore uses a process-wide WeakMap, shared by those callbacks; external JSON cannot supply its process-owned capability keys. The Task 07 correction below explains how permission-check proxies are supported. A real gateway test caught an earlier module-local registry mismatch, and the combined browser suite passed after the correction. Next incoming-request logging is disabled so private link URLs are not printed by the development server.
 
 During migration development, an empty audit placeholder was applied to the isolated test database before its body was finalized. Its test-only migration marker was repaired with explicit database/trigger guards, then the real migration was applied and retested. No shared/production migration or guest data was reset. `20261114_035520_audit_immutability` is now applied to the local development/test targets with the append-only trigger.
+
+
+## Commit acknowledgement correction — November 14, 2026
+
+Task 07 concurrency testing exposed commit-time errors swallowed by the pinned database adapter. Two real PostgreSQL regressions now prove that aborted transactions are never acknowledged, and serialization failures raised at COMMIT retry to a durable result. The required pnpm patch and its limits are recorded in the [transaction fix](../architecture/2026-11-14-transaction-commit-fix.md). The earlier callback-conflict proof did not cover this later failure.

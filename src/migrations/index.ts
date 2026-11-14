@@ -5,6 +5,8 @@ import * as migration_20261114_032409_staff_access_boundary from './20261114_032
 import * as migration_20261114_035520_audit_immutability from './20261114_035520_audit_immutability';
 import * as migration_20261114_044747_public_content from './20261114_044747_public_content';
 import * as migration_20261114_050156_public_headline from './20261114_050156_public_headline';
+import * as migration_20261114_051441_posts_enquiries from './20261114_051441_posts_enquiries';
+import * as migration_20261114_052943_editorial_fixture_guard from './20261114_052943_editorial_fixture_guard';
 
 export const migrations = [
   {
@@ -40,6 +42,16 @@ export const migrations = [
   {
     up: migration_20261114_050156_public_headline.up,
     down: migration_20261114_050156_public_headline.down,
-    name: '20261114_050156_public_headline'
+    name: '20261114_050156_public_headline',
+  },
+  {
+    up: migration_20261114_051441_posts_enquiries.up,
+    down: migration_20261114_051441_posts_enquiries.down,
+    name: '20261114_051441_posts_enquiries',
+  },
+  {
+    up: migration_20261114_052943_editorial_fixture_guard.up,
+    down: migration_20261114_052943_editorial_fixture_guard.down,
+    name: '20261114_052943_editorial_fixture_guard'
   },
 ];

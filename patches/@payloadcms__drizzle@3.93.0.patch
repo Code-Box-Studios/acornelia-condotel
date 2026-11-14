@@ -1,0 +1,68 @@
+diff --git a/dist/transactions/beginTransaction.js b/dist/transactions/beginTransaction.js
+index b997960d6443005979890c1fdeef9271810a407c..844338d429eb147c93b78489d73abc00638c126a 100644
+--- a/dist/transactions/beginTransaction.js
++++ b/dist/transactions/beginTransaction.js
+@@ -8,6 +8,8 @@ export const beginTransaction = async function beginTransaction(options) {
+         let transaction;
+         let transactionReady;
+         let transactionFailed;
++        let transactionRejected = false;
++        let transactionError;
+         // Await initialization here
+         // Prevent race conditions where the adapter may be
+         // re-initializing, and `this.drizzle` is potentially undefined
+@@ -22,7 +24,9 @@ export const beginTransaction = async function beginTransaction(options) {
+             await new Promise((res, rej)=>{
+                 resolve = ()=>{
+                     res();
+-                    return done;
++                    return done.then(() => {
++                        if (transactionRejected) throw transactionError || new Error("Transaction failed at commit");
++                    });
+                 };
+                 reject = ()=>{
+                     // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+@@ -33,6 +37,8 @@ export const beginTransaction = async function beginTransaction(options) {
+             });
+         }, options || this.transactionOptions).catch((err)=>{
+             // Connection failed before callback ran - reject instead of hanging forever
++            transactionRejected = true;
++            transactionError = err;
+             transactionFailed(err);
+         });
+         // Need to wait until the transaction is ready
+@@ -56,4 +62,3 @@ export const beginTransaction = async function beginTransaction(options) {
+     return id;
+ };
+ 
+-//# sourceMappingURL=beginTransaction.js.map
+\ No newline at end of file
+diff --git a/dist/transactions/commitTransaction.js b/dist/transactions/commitTransaction.js
+index 50c8251dbd29fe3ca7296800ed4fe5d2bb814057..071ab679b7db2d5795385057472e9db9c6fadd06 100644
+--- a/dist/transactions/commitTransaction.js
++++ b/dist/transactions/commitTransaction.js
+@@ -1,8 +1,9 @@
+ export const commitTransaction = async function commitTransaction(incomingID = '') {
+     const transactionID = incomingID instanceof Promise ? await incomingID : incomingID;
+-    // if the session was deleted it has already been aborted
++    if (!transactionID) return;
++    // A nonempty missing session has already aborted and cannot be acknowledged.
+     if (!this.sessions[transactionID]) {
+-        return;
++        throw new Error("Cannot commit an inactive transaction");
+     }
+     const session = this.sessions[transactionID];
+     // Delete from registry FIRST to prevent race conditions
+@@ -10,9 +11,9 @@ export const commitTransaction = async function commitTransaction(incomingID = '
+     delete this.sessions[transactionID];
+     try {
+         await session.resolve();
+-    } catch (_) {
+-        await session.reject();
++    } catch (error) {
++        try { await session.reject(); } catch { /* Preserve the commit failure. */ }
++        throw error;
+     }
+ };
+ 
+-//# sourceMappingURL=commitTransaction.js.map

@@ -48,6 +48,18 @@ for(const room of [
   const id=await image(room.file,room.alt)
   await payload.create({collection:'room-types',data:{_status:'published',slug:room.slug,name:room.name,description:room.description,bedDescription:room.bedDescription,maxGuests:room.maxGuests,gallery:[{image:id}],synthetic:true},user,overrideAccess:false})
 }
+const {propertyToday}=await import('../src/domain/shared/dates')
+const date=propertyToday(process.env.PROPERTY_TIMEZONE||'Asia/Manila')
+const upcomingDate=new Date(Date.parse(date+'T00:00:00Z')+7*86400000).toISOString().slice(0,10)
+for(const post of [
+  {slug:'a-slower-kind-of-morning',title:'A slower kind of morning',type:'story' as const,summary:'A little room for the things that make a day feel good.',body:'This is a local story preview for reviewing Acornelia’s new website.\n\nFinal stories will come from the property team, with approved words and photographs.',image:'acornelia-warm-boutique-v1.webp'},
+  {slug:'an-evening-to-look-forward-to',title:'An evening to look forward to',type:'event' as const,eventDate:upcomingDate,summary:'A sample announcement, imagining a little time together.',body:'This is a sample event for the local design review. It is not a real scheduled gathering.\n\nThe enquiry form demonstrates how visitors can ask about an announcement. It does not reserve a room, confirm an event or collect payment.',image:'acornelia-bright-escape-v1.webp'},
+]){
+  const existing=await payload.find({collection:'posts',where:{slug:{equals:post.slug}},limit:1,overrideAccess:true})
+  if(existing.totalDocs)continue
+  const cover=await image(post.image,'Local Acornelia concept image')
+  await payload.create({collection:'posts',data:{title:post.title,slug:post.slug,type:post.type,eventDate:'eventDate' in post?post.eventDate:undefined,summary:post.summary,body:post.body,cover,synthetic:true,_status:'published'},user,overrideAccess:false})
+}
 console.log('Local fixture content is ready. Existing CMS content was preserved. Access details, if generated, are in protected .local/development-access.json.')
 await payload.destroy()
 process.exit(0)

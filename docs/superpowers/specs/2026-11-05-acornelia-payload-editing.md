@@ -45,7 +45,7 @@ Use one source of content with preview and publication controls. Payload can sup
 
 ## Posts and events design — November 12, 2026
 
-The user requested owner posts about what happened at Acornelia and upcoming events. The [design and workflow](2026-11-12-acornelia-updates-and-events.md) are demonstrated in the guest page and Admin preview. Demo edits are browser-local and reset on reload; no Payload write occurs. The production Posts collection, server permissions, draft/public read rules, media validation and timezone handling remain to be configured and tested.
+The user requested owner posts about what happened at Acornelia and upcoming events. The [design and workflow](2026-11-12-acornelia-updates-and-events.md) are demonstrated in the guest page and Admin preview. Demo edits are browser-local and reset on reload; no Payload write occurs. The local application now implements the Posts collection, server permissions, draft/public rules, independent media checks and property-date filtering. Production timezone, content and enquiry policies still need approval and hosted verification.
 
 
 ## Implemented content controls — November 14, 2026
