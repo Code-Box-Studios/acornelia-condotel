@@ -26,7 +26,7 @@ export async function createHarness(options:{databaseUrl?:string;migrate?:boolea
   return {
     payload,pool,clock,uow,
     ctx(actor:Principal):CommandContext{return {actor,clock,uow,policy:syntheticPolicy(),requestId:randomUUID()}},
-    async seed<C extends CollectionSlug>(collection:C,data:RequiredDataFromCollectionSlug<C>){return payload.create({collection,data,overrideAccess:true})},
+    async seed<C extends CollectionSlug>(collection:C,data:RequiredDataFromCollectionSlug<C>){return payload.create({collection,data,disableVerificationEmail:true,overrideAccess:true})},
     async rows<C extends CollectionSlug>(collection:C,where:Where={}){return (await payload.find({collection,where,limit:1000,depth:0,overrideAccess:true})).docs},
     async reset(){
       const tables=await pool.query("select tablename from pg_tables where schemaname='public' and tablename<>'payload_migrations'")

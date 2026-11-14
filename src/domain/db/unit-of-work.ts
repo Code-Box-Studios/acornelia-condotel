@@ -13,6 +13,7 @@ async function userForActor(payload:Payload,actor:Principal,req:PayloadRequest):
   const collection=actor.collection as CollectionSlug
   if(!payload.collections[collection]?.config.auth)throw new Error('Identity collection is not configured')
   const record=await payload.findByID({collection,id:actor.id,overrideAccess:true,depth:0,req})
+  if('deactivated' in record&&record.deactivated)throw new Error('Account is inactive')
   if(actor.kind==='staff'&&(!('role' in record)||record.role!==actor.role))throw new Error('Staff authority changed')
   return {...record,collection} as TypedUser
 }

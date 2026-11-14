@@ -183,3 +183,8 @@ The user authorized the reviewed implementation plan and commits/pushes on `main
 ## Local database proof — November 14, 2026
 
 The two foundation migrations and the PostgreSQL rollback/concurrency/exclusion proof passed locally, with an optimized Next build. See [current implementation evidence](implementation-progress.md#database-proof--november-14-2026). Use `pnpm db:migrate`; it currently refuses hosted targets. `pnpm test` uses only a verified `acornelia*_test` database on the dedicated local port 55432 and creates/removes its own fresh-upgrade fixture database. This is not production migration approval or hosted pooler verification.
+
+
+## Identity setup — November 14, 2026
+
+See [identity boundary and bootstrap](implementation-progress.md#identity-boundary--november-14-2026). Anonymous first-register is blocked; the first local operator uses `pnpm staff:bootstrap` with protected `BOOTSTRAP_ADMIN_*` configuration. It refuses hosted databases and existing staff. `CUSTOMER_AUTH_METHOD` is a future production activation setting, not approval of a method. `EMAIL_TRANSPORT` remains unset until delivery is implemented/verified. No credential or real customer account was created on a hosted service.

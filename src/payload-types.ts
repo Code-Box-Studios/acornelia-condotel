@@ -64,10 +64,12 @@ export type SupportedTimezones =
 export interface Config {
   auth: {
     'staff-users': StaffUserAuthOperations;
+    customers: CustomerAuthOperations;
   };
   blocks: {};
   collections: {
     'staff-users': StaffUser;
+    customers: Customer;
     rooms: Room;
     bookings: Booking;
     allocations: Allocation;
@@ -84,6 +86,7 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     'staff-users': StaffUsersSelect<false> | StaffUsersSelect<true>;
+    customers: CustomersSelect<false> | CustomersSelect<true>;
     rooms: RoomsSelect<false> | RoomsSelect<true>;
     bookings: BookingsSelect<false> | BookingsSelect<true>;
     allocations: AllocationsSelect<false> | AllocationsSelect<true>;
@@ -107,7 +110,7 @@ export interface Config {
   widgets: {
     collections: CollectionsWidget;
   };
-  user: StaffUser;
+  user: StaffUser | Customer;
   jobs: {
     tasks: unknown;
     workflows: unknown;
@@ -131,12 +134,31 @@ export interface StaffUserAuthOperations {
     password: string;
   };
 }
+export interface CustomerAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
+}
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "staff-users".
  */
 export interface StaffUser {
   id: string;
+  deactivated?: boolean | null;
   name: string;
   role: 'staff' | 'developer';
   updatedAt: string;
@@ -158,6 +180,36 @@ export interface StaffUser {
     | null;
   password?: string | null;
   collection: 'staff-users';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customers".
+ */
+export interface Customer {
+  id: string;
+  name: string;
+  deactivated?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
+  _verified?: boolean | null;
+  _verificationToken?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'customers';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -369,6 +421,10 @@ export interface PayloadLockedDocument {
         value: string | StaffUser;
       } | null)
     | ({
+        relationTo: 'customers';
+        value: string | Customer;
+      } | null)
+    | ({
         relationTo: 'rooms';
         value: string | Room;
       } | null)
@@ -401,10 +457,15 @@ export interface PayloadLockedDocument {
         value: string | WorkItem;
       } | null);
   globalSlug?: string | null;
-  user: {
-    relationTo: 'staff-users';
-    value: string | StaffUser;
-  };
+  user:
+    | {
+        relationTo: 'staff-users';
+        value: string | StaffUser;
+      }
+    | {
+        relationTo: 'customers';
+        value: string | Customer;
+      };
   updatedAt: string;
   createdAt: string;
 }
@@ -414,10 +475,15 @@ export interface PayloadLockedDocument {
  */
 export interface PayloadPreference {
   id: string;
-  user: {
-    relationTo: 'staff-users';
-    value: string | StaffUser;
-  };
+  user:
+    | {
+        relationTo: 'staff-users';
+        value: string | StaffUser;
+      }
+    | {
+        relationTo: 'customers';
+        value: string | Customer;
+      };
   key?: string | null;
   value?:
     | {
@@ -447,6 +513,7 @@ export interface PayloadMigration {
  * via the `definition` "staff-users_select".
  */
 export interface StaffUsersSelect<T extends boolean = true> {
+  deactivated?: T;
   name?: T;
   role?: T;
   updatedAt?: T;
@@ -457,6 +524,33 @@ export interface StaffUsersSelect<T extends boolean = true> {
   salt?: T;
   hash?: T;
   resetPasswordRequestedAt?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
+  sessions?:
+    | T
+    | {
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customers_select".
+ */
+export interface CustomersSelect<T extends boolean = true> {
+  name?: T;
+  deactivated?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  resetPasswordRequestedAt?: T;
+  _verified?: T;
+  _verificationToken?: T;
   loginAttempts?: T;
   lockUntil?: T;
   sessions?:

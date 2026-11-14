@@ -14,3 +14,6 @@ playwright-report/
 *.tsbuildinfo
 __pycache__/
 media/
+
+.next-e2e/
+.local/

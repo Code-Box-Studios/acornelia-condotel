@@ -27,7 +27,8 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "local:setup": "tsx scripts/local-setup.ts",
     "seed:development": "tsx scripts/seed-development.ts",
-    "verify:acceptance": "tsx scripts/verify-acceptance.ts"
+    "verify:acceptance": "tsx scripts/verify-acceptance.ts",
+    "staff:bootstrap": "tsx scripts/bootstrap-staff.ts"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "3.93.0",
