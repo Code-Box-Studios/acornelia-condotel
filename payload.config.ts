@@ -5,6 +5,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
 import { unconfiguredEmailAdapter } from './src/email/unconfigured'
+import {withStaffAudit,failedOperation} from './src/payload/hooks/audit'
 import { Customers } from './src/payload/collections/Customers'
 import { StaffUsers } from './src/payload/collections/StaffUsers'
 import { Rooms } from './src/payload/collections/Rooms'
@@ -21,11 +22,11 @@ export function createPayloadConfig(databaseUrl=process.env.DATABASE_URL,driver?
   cookiePrefix:'acornelia',email:unconfiguredEmailAdapter,graphQL:{disable:true},
   serverURL:process.env.APP_URL || 'http://localhost:3042',
   admin:{user:'staff-users',importMap:{baseDir:dirname}},
-  collections:[StaffUsers,Customers,Rooms,Bookings,Allocations,OfferAllocations,PaymentAttempts,PaymentTransactions,AuditEntries,WorkItems], editor:lexicalEditor(),sharp,
+  collections:[StaffUsers,Customers,Rooms,Bookings,Allocations,OfferAllocations,PaymentAttempts,PaymentTransactions,AuditEntries,WorkItems].map(withStaffAudit), editor:lexicalEditor(),sharp,
   db:postgresAdapter({pg:driver,pool:{connectionString:databaseUrl,max:8},idType:'uuid',push:false,disableCreateDatabase:true,migrationDir:path.resolve(dirname,'src/migrations'),transactionOptions:{isolationLevel:'serializable'}}),
   typescript:{outputFile:path.resolve(dirname,'src/payload-types.ts')},
   csrf:[process.env.APP_URL || 'http://localhost:3042'],
   cors:[process.env.APP_URL || 'http://localhost:3042'],
-  telemetry:false,
+  hooks:{afterError:[failedOperation]},telemetry:false,
 })}
 export default createPayloadConfig()

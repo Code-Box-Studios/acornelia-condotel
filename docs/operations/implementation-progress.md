@@ -9,7 +9,8 @@ Started November 13, 2026, following the user's instruction to implement the rev
 - Dedicated local PostgreSQL container and persistent volume created through `compose.yaml`; other containers were preserved. This is not a Supabase connection or production proof.
 - Task 02: PostgreSQL transaction/exclusion proof implemented. Twelve integration checks pass, including six injected rollback stages, exact large amounts, direct SQL rejection, last-room concurrency, serializable retry, fresh migrations and preservation of existing records during upgrade. The optimized Next build, lint and TypeScript checks passed.
 - Task 03: customer/staff identity boundaries implemented. The full current suite has 42 passing tests; eight Chromium browser checks pass across desktop and mobile. TypeScript, lint and optimized build pass.
-- Tasks 04–29 remain pending. Protected transactional action logs are next.
+- Task 04: protected transactional action logging implemented. The current suite has 51 passing tests and 14 passing Chromium desktop/mobile browser checks. TypeScript, lint, reviewed local migrations and the optimized build pass.
+- Tasks 05–29 remain pending. Public content/media configuration and the public website are next.
 
 ## Decision status
 
@@ -44,3 +45,15 @@ Staff bootstrap is a separate local operator command: configure `BOOTSTRAP_ADMIN
 Email/password with verification is a local candidate, not a production-method selection. Production customer authentication remains disabled unless its method is explicitly configured after the decision. Customer registration/profile flows, approved historical claims and actual transactional email remain later tasks. An unconfigured email adapter now fails closed instead of printing private verification/reset links to console. Recovery is unavailable until a transport is configured.
 
 Current browser coverage uses Chromium on desktop and Pixel 7 emulation. Safari/WebKit and actual devices remain release/UAT checks. Recovery quarantine defaults to blocking protected routes; the complete restoration/reconciliation procedure remains Task 26.
+
+## Protected logs — November 14, 2026
+
+Staff mutations and required action logs now use the same Payload transaction. Tests inject a real PostgreSQL audit-insert failure and prove that staff account creation and configured room-label edits roll back. Staff sign-in/out, sensitive reads, successful exports, failed/refused requests and gateway denials are recorded. Automatic events retain System attribution. Central collection validation rejects passwords, private tokens and guest contact profiles even through privileged Local API writes.
+
+Only developers can read/search/export the action log. Generated endpoints, counts/versions, custom CSV access and attempted historical edits were checked through real HTTP requests. The database also rejects updates/deletes of old entries; corrections append. No maintenance/retention deletion policy was selected.
+
+`GET /api/developer/audit` supports action/type filters and cursor pagination. `format=csv` exports the selected page, up to 100 entries; the filename identifies it as a page and `X-Next-Cursor` exposes continuation when present. Each export records a separate audit event. This is a protected API foundation; the final staff/developer workspace remains a later task.
+
+Payload caches collection callbacks across Next bundles and development reloads. The in-process request capability registry therefore uses a process-wide WeakMap, shared by those callbacks; external JSON cannot supply its request-object keys. A real gateway test caught an earlier module-local registry mismatch, and the combined browser suite passed after the correction. Next incoming-request logging is disabled so private link URLs are not printed by the development server.
+
+During migration development, an empty audit placeholder was applied to the isolated test database before its body was finalized. Its test-only migration marker was repaired with explicit database/trigger guards, then the real migration was applied and retested. No shared/production migration or guest data was reset. `20261114_035520_audit_immutability` is now applied to the local development/test targets with the append-only trigger.

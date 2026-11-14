@@ -188,3 +188,8 @@ The two foundation migrations and the PostgreSQL rollback/concurrency/exclusion 
 ## Identity setup — November 14, 2026
 
 See [identity boundary and bootstrap](implementation-progress.md#identity-boundary--november-14-2026). Anonymous first-register is blocked; the first local operator uses `pnpm staff:bootstrap` with protected `BOOTSTRAP_ADMIN_*` configuration. It refuses hosted databases and existing staff. `CUSTOMER_AUTH_METHOD` is a future production activation setting, not approval of a method. `EMAIL_TRANSPORT` remains unset until delivery is implemented/verified. No credential or real customer account was created on a hosted service.
+
+
+## Protected action-log evidence — November 14, 2026
+
+[Protected-log implementation evidence](implementation-progress.md#protected-logs--november-14-2026) records transactional rollback, developer-only API/page exports, append-only SQL protection, secret rejection and real browser denial tests. Incoming request URL logging is disabled. The registry that authorizes internal requests is shared across Next module instances, while authorization remains tied to server-owned request identity. Current checks pass locally; production deployment, retention and recovery verification remain pending.
