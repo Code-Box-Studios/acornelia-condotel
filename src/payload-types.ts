@@ -452,6 +452,11 @@ export interface Booking {
   id: string;
   code?: string | null;
   ownerCustomer?: (string | null) | Customer;
+  checkoutKey?: string | null;
+  checkoutFingerprint?: string | null;
+  checkoutBrowserHash?: string | null;
+  checkoutQuote?: (string | null) | Quote;
+  preparedAt?: string | null;
   status: 'held' | 'confirmed' | 'cancelled' | 'completed' | 'expired';
   revision: number;
   arrival: string;
@@ -1379,6 +1384,11 @@ export interface RoomsSelect<T extends boolean = true> {
 export interface BookingsSelect<T extends boolean = true> {
   code?: T;
   ownerCustomer?: T;
+  checkoutKey?: T;
+  checkoutFingerprint?: T;
+  checkoutBrowserHash?: T;
+  checkoutQuote?: T;
+  preparedAt?: T;
   status?: T;
   revision?: T;
   arrival?: T;

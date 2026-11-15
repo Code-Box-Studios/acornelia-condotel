@@ -14,6 +14,7 @@ import * as migration_20261115_183744_physical_inventory from './20261115_183744
 import * as migration_20261115_185704_immutable_quotes_rates from './20261115_185704_immutable_quotes_rates';
 import * as migration_20261115_193116_account_offer_usage from './20261115_193116_account_offer_usage';
 import * as migration_20261115_203440_durable_work from './20261115_203440_durable_work';
+import * as migration_20261115_204353_atomic_checkout from './20261115_204353_atomic_checkout';
 
 export const migrations = [
   {
@@ -94,6 +95,11 @@ export const migrations = [
   {
     up: migration_20261115_203440_durable_work.up,
     down: migration_20261115_203440_durable_work.down,
-    name: '20261115_203440_durable_work'
+    name: '20261115_203440_durable_work',
+  },
+  {
+    up: migration_20261115_204353_atomic_checkout.up,
+    down: migration_20261115_204353_atomic_checkout.down,
+    name: '20261115_204353_atomic_checkout'
   },
 ];

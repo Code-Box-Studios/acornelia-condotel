@@ -6,6 +6,8 @@ export const Bookings: CollectionConfig={
   fields:[
     {name:'code',type:'text',unique:true},
     {name:'ownerCustomer',type:'relationship',relationTo:'customers',index:true},
+    {name:'checkoutKey',type:'text',unique:true},{name:'checkoutFingerprint',type:'text'},{name:'checkoutBrowserHash',type:'text'},
+    {name:'checkoutQuote',type:'relationship',relationTo:'quotes',index:true},date('preparedAt',false),
     select('status',['held','confirmed','cancelled','completed','expired'],'held'),
     {name:'revision',type:'number',required:true,defaultValue:1,min:1},
     date('arrival'),date('departure'),json('acceptedQuote'),json('contact'),
