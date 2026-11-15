@@ -1,4 +1,5 @@
 import '../support/env'
+import {randomUUID} from 'node:crypto'
 import {test,expect} from '@playwright/test'
 import {createHarness,type TestHarness} from '../support/harness'
 let h:TestHarness
@@ -29,4 +30,10 @@ test('issues private exact quotes and rejects altered totals, foreign browsers a
   expect((await request.post('/api/booking/quotes/accept',{headers:{origin},data:{quoteId:quote.id,version:quote.version}})).ok()).toBe(false)
   expect(await h.rows('payment-attempts')).toHaveLength(0)
   expect(await h.rows('allocations')).toHaveLength(0)
+})
+
+test('reports unavailable pricing when no approved policy exists',async({request})=>{
+  const response=await request.post('/api/booking/quotes',{headers:{origin},data:{stay:{roomTypeId:randomUUID(),arrival:'2027-05-10',departure:'2027-05-12',occupancy:{adults:2,children:0}}}})
+  expect(response.status()).toBe(503)
+  expect(await response.json()).toEqual({error:'Pricing is being prepared. Please contact Acornelia.'})
 })

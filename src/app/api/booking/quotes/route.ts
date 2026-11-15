@@ -1,4 +1,3 @@
-import {ZodError} from 'zod'
 import {readBoundedJson} from '@/http/body'
 import {requestContext} from '@/features/auth/context'
 import {validateBookingSearch} from '@/features/booking/search'
@@ -16,5 +15,5 @@ export async function POST(request:Request){
     const quote=await quoteStay(ctx,input),response=Response.json(quote,{status:201})
     setQuoteBrowser(response.headers,ctx.browserKey)
     return response
-  }catch(error){return Response.json({error:error instanceof ZodError||error instanceof InventoryInputError?'Review the stay dates and guest count.':'Pricing is being prepared. Please contact Acornelia.'},{status:error instanceof ZodError||error instanceof InventoryInputError?400:503})}
+  }catch(error){return Response.json({error:error instanceof InventoryInputError?'Review the stay dates and guest count.':'Pricing is being prepared. Please contact Acornelia.'},{status:error instanceof InventoryInputError?400:503})}
 }
