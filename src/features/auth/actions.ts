@@ -1,3 +1,4 @@
+import {enqueue} from '@/domain/work/enqueue'
 import {createHmac,pbkdf2} from 'node:crypto'
 import {promisify} from 'node:util'
 import {z} from 'zod'
@@ -39,7 +40,7 @@ async function issue(tx:DbTx,ctx:CommandContext,customer:Customer,purpose:'verif
   const grant=await tx.payload.create({collection:'auth-tokens',data:{tokenHash:privateDigest(token),purpose,account:customer.id,emailHash:emailDigest(customer.email),securityRevision:customer.securityRevision,expiresAt},req:tx.req,overrideAccess:false})
   const delivery=await tx.payload.create({collection:'auth-deliveries',data:{purpose,account:customer.id,tokenRef:grant.id,expiresAt,state:'pending',encryptedState:'pending'},req:tx.req,overrideAccess:false})
   await tx.payload.update({collection:'auth-deliveries',id:delivery.id,data:{encryptedState:encryptPrivateState({token,recipient:customer.email,name:customer.name,purpose},'auth-delivery:'+delivery.id)},req:tx.req,overrideAccess:false})
-  await tx.payload.create({collection:'work-items',data:{semanticKey:`auth:${grant.id}`,kind:'email',payload:{messageId:delivery.id,category:'auth'},state:'ready',generation:0,attempts:0,availableAt:ctx.clock.now()},req:tx.req,overrideAccess:false})
+  await enqueue(tx,{semanticKey:`auth:${grant.id}`,kind:'email',payload:{messageId:delivery.id,category:'auth'},availableAt:ctx.clock.now()})
 }
 export async function registerCustomer(ctx:CommandContext,input:{name:string;email:string}):Promise<typeof AUTH_ACK>{
   assertCustomerAuthAvailable(ctx);const parsed=registration.parse(input)

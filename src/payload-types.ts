@@ -817,7 +817,7 @@ export interface AuditEntry {
 export interface WorkItem {
   id: string;
   semanticKey: string;
-  kind: 'create-checkout' | 'reconcile-payment' | 'expire-hold' | 'email' | 'refund' | 'enquiry';
+  kind: 'create-checkout' | 'reconcile-payment' | 'reconcile-refund' | 'expire-hold' | 'email' | 'refund' | 'enquiry';
   payload:
     | {
         [k: string]: unknown;
@@ -830,8 +830,10 @@ export interface WorkItem {
   state: 'ready' | 'leased' | 'done' | 'uncertain' | 'failed';
   generation: number;
   attempts: number;
+  fingerprint?: string | null;
   leaseOwner?: string | null;
   leaseExpires?: string | null;
+  dispatchStarted?: string | null;
   availableAt: string;
   lastError?: string | null;
   updatedAt: string;
@@ -1483,8 +1485,10 @@ export interface WorkItemsSelect<T extends boolean = true> {
   state?: T;
   generation?: T;
   attempts?: T;
+  fingerprint?: T;
   leaseOwner?: T;
   leaseExpires?: T;
+  dispatchStarted?: T;
   availableAt?: T;
   lastError?: T;
   updatedAt?: T;

@@ -1,6 +1,6 @@
 # Acornelia project documentation
 
-**Updated:** November 14, 2026.
+**Updated:** November 15, 2026.
 
 Acornelia implementation has started from the reviewed plan. The repository also contains specifications, interactive mockups and owner questionnaires. See [implementation progress](operations/implementation-progress.md) for actual checks and pending work. Production deployment and provider connections have not been verified.
 

@@ -18,7 +18,8 @@ Started November 13, 2026, following the user's instruction to implement the rev
 - Task 10: shared physical-room availability, explicit sale state, policy-validated allocation, maintenance/owner blocks and opening-import preview are implemented. All 102 automated checks passed. Two new Chromium HTTP checks passed on desktop/mobile, alongside the 46 browser checks from Task 09. Lint, TypeScript, local migration and optimized build passed. Approved production stay rules and opening inventory remain absent; the public availability endpoint fails closed.
 - Task 11: exact pricing, immutable policy/rate versions, private quote issuance and explicit acceptance are implemented. All 118 automated checks and all 50 Chromium desktop/mobile checks passed. Lint, TypeScript, local migration and optimized build passed. New rate versions preserve previously accepted amounts; private binding, wrong versions, expiry, audit rollback and zero-total gates were verified. No real production rates, tax/fee rules or approval records were selected.
 - Task 12: all-account offer publication/withdrawal, private My Offers, shared quote discounts and atomic usage caps/transitions are implemented. All 137 automated checks and all 58 Chromium desktop/mobile checks passed. Lint, TypeScript, local migration and optimized build passed. Tests cover guest denial, last-use/per-account races, offer/version scope, direct SQL overuse, withdrawal, retry/consumption/release idempotency, zero totals, wrong release reasons and audit rollback. Narrow theme screenshots were inspected. Real terms remain unselected; refund-triggered reinstatement stays gated until Task 23 verifies refunds.
-- Tasks 13–29 remain pending. Durable work leases and effect execution are next.
+- Task 13: durable outbox records, generation-fenced leases, protected runner entry and safe replay are implemented locally. Validation is recorded below. Live transports and scheduling remain gated.
+- Tasks 14–29 remain pending. Atomic checkout preparation is next.
 
 ## Decision status
 
@@ -70,3 +71,12 @@ During migration development, an empty audit placeholder was applied to the isol
 ## Commit acknowledgement correction — November 14, 2026
 
 Task 07 concurrency testing exposed commit-time errors swallowed by the pinned database adapter. Two real PostgreSQL regressions now prove that aborted transactions are never acknowledged, and serialization failures raised at COMMIT retry to a durable result. The required pnpm patch and its limits are recorded in the [transaction fix](../architecture/2026-11-14-transaction-commit-fix.md). The earlier callback-conflict proof did not cover this later failure.
+
+
+## Durable outbox and work leases — November 15, 2026
+
+Task 13 connects authentication-delivery and enquiry producers to the typed transaction-owned enqueue function. Committed work survives a fresh application context; rolled-back producer commands leave no work. Matching semantic keys reuse intent, including concurrent producers, while changed payloads are refused. Lease credentials are random and stored only as digests. Completion checks the live owner/generation/deadline before executing database effects, then commits those effects, work status and audit together.
+
+Expired undispatched work and repeatable reconciliation can be reclaimed. A possibly dispatched checkout/refund/mail request becomes uncertain and cannot be blindly replayed. Retry limits/backoff and failed/uncertain listings support operator escalation; only developer authority can replay safe work, and completed work is immutable. PostgreSQL guards protect identity, generations and terminal transitions independently of the application path. The protected HTTP runner rejects browser identity, unknown request fields and unconfigured transports.
+
+Validation: all 148 automated checks and all 60 Chromium desktop/mobile checks passed, including 11 new queue integration cases and authenticated runner HTTP checks. Lint, TypeScript, development migration and optimized build passed. No provider or email request was sent. Decision 10 must still approve actual limits, cadence, external runner, alerts and an operator; subsequent tasks must register tested transports, and Task 26 must provide restore-wide external fencing. See the [operational rules and implementation bounds](deployment.md#scheduled-work-and-payment-recovery).

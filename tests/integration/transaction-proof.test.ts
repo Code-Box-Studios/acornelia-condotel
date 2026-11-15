@@ -1,3 +1,4 @@
+import {enqueue} from '@/domain/work/enqueue'
 import {afterAll,beforeAll,beforeEach,describe,expect,it} from 'vitest'
 import {randomUUID} from 'node:crypto'
 import {createHarness,type TestHarness} from '../support/harness'
@@ -28,9 +29,9 @@ describe('real PostgreSQL transaction and constraints',()=>{
     const booking=await payload.create({collection:'bookings',data:{...bookingData,ownerCustomer:offerFixture.customerId},req,overrideAccess:false});fail('booking')
     await payload.create({collection:'allocations',data:{room:roomId,booking:booking.id,...stay,purpose:'hold',released:false},req,overrideAccess:false});fail('allocation')
     await payload.create({collection:'offer-allocations',data:{booking:booking.id,offer:offerFixture.offerId,offerVersion:offerFixture.versionId,customer:offerFixture.customerId,allocationKey:randomUUID(),state:'reserved'},req,overrideAccess:false});fail('offer')
-    await payload.create({collection:'payment-attempts',data:{booking:booking.id,merchantReference:randomUUID(),commandKey:randomUUID(),fingerprint:'fixture',amountMinor:'9007199254740993',currency:'PHP',acceptedContext:{fixture:true},purpose:'booking',revision:1,state:'preparing',deadline:'2026-11-13T05:00:00.000Z'},req,overrideAccess:false});fail('attempt')
+    const attempt=await payload.create({collection:'payment-attempts',data:{booking:booking.id,merchantReference:randomUUID(),commandKey:randomUUID(),fingerprint:'fixture',amountMinor:'9007199254740993',currency:'PHP',acceptedContext:{fixture:true},purpose:'booking',revision:1,state:'preparing',deadline:'2026-11-13T05:00:00.000Z'},req,overrideAccess:false});fail('attempt')
     await payload.create({collection:'audit-entries',data:{actor,action:'fixture:created',recordType:'booking',recordId:booking.id,outcome:'success'},req,overrideAccess:false});fail('audit')
-    await payload.create({collection:'work-items',data:{semanticKey:randomUUID(),kind:'create-checkout',state:'ready',generation:0,attempts:0,payload:{bookingId:booking.id},availableAt:'2026-11-13T04:00:00.000Z'},req,overrideAccess:false});fail('work')
+    await enqueue(tx,{semanticKey:randomUUID(),kind:'create-checkout',payload:{attemptId:attempt.id},availableAt:'2026-11-13T04:00:00.000Z'});fail('work')
     return booking.id
   }
   it.each(['booking','allocation','offer','attempt','audit','work'])('rolls back all dependent writes after %s fails',async step=>{

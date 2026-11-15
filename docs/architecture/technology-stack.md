@@ -169,3 +169,8 @@ Physical inventory now shares PostgreSQL exclusion guards across all allocation 
 The November 15 quote implementation uses bigint calculations and immutable PostgreSQL-backed policy/rate/quote versions. PHP and the documented overnight formulas are supported candidates, not owner-selected rates or tax terms. Policy approval and production publication remain gated. Quotes bind to a private browser cookie and, when issued to a customer, that verified customer ID. No price is supplied by client JSON, and accepted financial context is retained independently of later public rates.
 
 Account offers now use immutable Payload versions, server-only quote evaluation and PostgreSQL aggregate usage guards. Offer-wide/version-wide caps and release/retain rules are explicit rather than defaults. All accounts may see eligible published benefits; there is no targeting, automatic signup reward, points system or marketing enrollment. Real promotion terms, approved publication and refund reinstatement remain gated; the latter requires the verified refund workflow in Task 23.
+
+
+### Durable queue implementation — November 15, 2026
+
+Task 13 implements application-owned PostgreSQL outbox records and generation-fenced leases, using the existing Payload transaction boundary. The choice keeps booking intent atomic with its business writes and supports explicit uncertainty/reconciliation rules. Payload `autoRun` is not used. The external scheduler, cadence, operator, alert thresholds and subscription remain Decision 10. No new provider or service charge was selected. See the [scheduled-work implementation and limits](../operations/deployment.md#scheduled-work-and-payment-recovery). Actual Maya/mail handlers and hosted execution require subsequent verification.

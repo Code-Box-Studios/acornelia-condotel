@@ -412,3 +412,10 @@ The requested optional customer accounts, booking history and all-account offers
 - [November 13 consolidation verification](../../architecture/2026-11-13-specification-consolidation-verification.json): document, source-preservation, link and review-artifact checks for version 2.
 
 Version 2 consolidates the existing requirements and technical review into one current specification. The 38 acceptance requirements and confirmed user choices are retained; open policies remain open. The repository contains design prototypes and documentation, not a verified production booking/account system. Historical PDFs, review snapshots, questionnaire exports, the documentation archive and Notion mirrors are not automatically refreshed by this rewrite.
+
+
+### Durable work implementation clarification — November 15, 2026
+
+Booking, authentication-delivery and enquiry commands persist typed outbox references in the same transaction as their state. Matching semantic intent reuses its durable record; changed payload cannot reuse that key. A worker's owner credential, lease deadline and increasing generation fence both job completion and its database effects. Provider requests run outside retryable transactions. Lease expiry or timeout after checkout/refund/mail dispatch requires reconciliation, never blind redispatch. Completed work cannot replay; authorized safe replay is logged. Tests must prove restart survival, competing claims, takeover, stale-effect rejection, bounded retries and audit-failure rollback.
+
+The implementation supports policy-bounded leases, batches and retry backoff. Production values, scheduler/cadence, failure alerts and operator ownership remain Decision 10. Unconfigured transports do not claim work. Actual provider operation ownership, email deduplication and restore-wide external fencing remain separate required checks; generic queue tests do not establish those integrations.

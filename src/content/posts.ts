@@ -1,3 +1,4 @@
+import {enqueue} from '@/domain/work/enqueue'
 import {createHash,createHmac,randomUUID} from 'node:crypto'
 import {z} from 'zod'
 import type {Payload,Where} from 'payload'
@@ -61,7 +62,7 @@ export async function submitEnquiry(ctx:CommandContext,input:EnquiryInput):Promi
       postSnapshot={id:post.id,title:plain(post.title),eventDate:post.eventDate||null,type:post.type}
     }
     const enquiry=await tx.payload.create({collection:'enquiries',data:{reference:'ENQ-'+randomUUID(),nonce,fingerprint,emailHash,submittedAt:ctx.clock.now(),contact,postSnapshot,state:'delivery-pending'},req:tx.req,overrideAccess:false})
-    await tx.payload.create({collection:'work-items',data:{semanticKey:`enquiry:${enquiry.id}`,kind:'enquiry',payload:{enquiryId:enquiry.id},state:'ready',generation:0,attempts:0,availableAt:ctx.clock.now()},req:tx.req,overrideAccess:false})
+    await enqueue(tx,{semanticKey:`enquiry:${enquiry.id}`,kind:'enquiry',payload:{enquiryId:enquiry.id},availableAt:ctx.clock.now()})
     await appendAudit(tx,{action:'enquiry:submitted',recordType:'enquiries',recordId:enquiry.id,outcome:'success'})
     return enquiry.id
   })
