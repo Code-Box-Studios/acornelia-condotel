@@ -15,7 +15,7 @@ const email=z.discriminatedUnion('category',[
 ])
 export const workPolicySchema=z.object({leaseSeconds:z.number().int().min(5).max(300),maxAttempts:z.number().int().min(1).max(20),maxBatch:z.number().int().min(1).max(100),backoffSeconds:z.array(z.number().int().min(1).max(86400)).min(1).max(20),runSeconds:z.number().int().min(1).max(240)}).strict()
 export function payloadFor(kind:WorkKind,input:unknown):WorkPayload{
-  return ({'create-checkout':attempt,'reconcile-payment':attempt,'reconcile-refund':refund,'expire-hold':booking,email,refund,enquiry:z.object({enquiryId:id}).strict()}[kind]).parse(input)
+  return ({'payment-observation':z.object({inboxId:id}).strict(),'create-checkout':attempt,'reconcile-payment':attempt,'reconcile-refund':refund,'expire-hold':booking,email,refund,enquiry:z.object({enquiryId:id}).strict()}[kind]).parse(input)
 }
 export const intentSchema=z.object({semanticKey:z.string().regex(/^[A-Za-z0-9:_-]{1,180}$/),kind:z.enum(workKinds),payload:z.unknown(),availableAt:instant}).strict()
 export function workFingerprint(kind:WorkKind,payload:unknown){return createHash('sha256').update(JSON.stringify({kind,payload:payloadFor(kind,payload)})).digest('hex')}
@@ -28,7 +28,7 @@ export async function workPolicy(ctx:CommandContext,tx?:DbTx){
   if(!parsed.synthetic&&tx)await requireCurrentPolicy(tx,ctx,['work'])
   return workPolicySchema.parse(parsed.sections.work)
 }
-export function repeatable(kind:WorkKind){return ['reconcile-payment','reconcile-refund','expire-hold'].includes(kind)}
+export function repeatable(kind:WorkKind){return ['payment-observation','reconcile-payment','reconcile-refund','expire-hold'].includes(kind)}
 export async function fencedRow(tx:DbTx,lease:WorkLease,now:string):Promise<WorkItem>{
   id.parse(lease.id)
   const row=await tx.payload.findByID({collection:'work-items',id:lease.id,req:tx.req,overrideAccess:false,depth:0})

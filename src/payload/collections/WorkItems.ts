@@ -5,7 +5,7 @@ export const WorkItems: CollectionConfig={
   slug:'work-items',access:commandOnly,
   fields:[
     {name:'semanticKey',type:'text',required:true,unique:true},
-    select('kind',['create-checkout','reconcile-payment','reconcile-refund','expire-hold','email','refund','enquiry']),
+    select('kind',['create-checkout','payment-observation','reconcile-payment','reconcile-refund','expire-hold','email','refund','enquiry']),
     json('payload'),select('state',['ready','leased','done','uncertain','failed'],'ready'),
     {name:'generation',type:'number',required:true,defaultValue:0,min:0},
     {name:'attempts',type:'number',required:true,defaultValue:0,min:0},

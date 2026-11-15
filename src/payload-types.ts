@@ -92,6 +92,7 @@ export interface Config {
     'offer-allocations': OfferAllocation;
     'payment-attempts': PaymentAttempt;
     'payment-transactions': PaymentTransaction;
+    'payment-inbox': PaymentInbox;
     'audit-entries': AuditEntry;
     'work-items': WorkItem;
     'payload-kv': PayloadKv;
@@ -125,6 +126,7 @@ export interface Config {
     'offer-allocations': OfferAllocationsSelect<false> | OfferAllocationsSelect<true>;
     'payment-attempts': PaymentAttemptsSelect<false> | PaymentAttemptsSelect<true>;
     'payment-transactions': PaymentTransactionsSelect<false> | PaymentTransactionsSelect<true>;
+    'payment-inbox': PaymentInboxSelect<false> | PaymentInboxSelect<true>;
     'audit-entries': AuditEntriesSelect<false> | AuditEntriesSelect<true>;
     'work-items': WorkItemsSelect<false> | WorkItemsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -791,6 +793,30 @@ export interface PaymentTransaction {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-inbox".
+ */
+export interface PaymentInbox {
+  id: string;
+  semanticKey: string;
+  deliveryKey: string;
+  providerPaymentId: string;
+  merchantReference?: string | null;
+  environment: 'sandbox' | 'production';
+  amountMinor: string;
+  currency: string;
+  providerStatus: string;
+  method?: string | null;
+  providerPaidAt?: string | null;
+  receivedAt: string;
+  source: 'webhook' | 'retrieval';
+  state: 'pending' | 'processed' | 'exception';
+  processedAt?: string | null;
+  reasonCode?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "audit-entries".
  */
 export interface AuditEntry {
@@ -827,7 +853,15 @@ export interface AuditEntry {
 export interface WorkItem {
   id: string;
   semanticKey: string;
-  kind: 'create-checkout' | 'reconcile-payment' | 'reconcile-refund' | 'expire-hold' | 'email' | 'refund' | 'enquiry';
+  kind:
+    | 'create-checkout'
+    | 'payment-observation'
+    | 'reconcile-payment'
+    | 'reconcile-refund'
+    | 'expire-hold'
+    | 'email'
+    | 'refund'
+    | 'enquiry';
   payload:
     | {
         [k: string]: unknown;
@@ -968,6 +1002,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'payment-transactions';
         value: string | PaymentTransaction;
+      } | null)
+    | ({
+        relationTo: 'payment-inbox';
+        value: string | PaymentInbox;
       } | null)
     | ({
         relationTo: 'audit-entries';
@@ -1477,6 +1515,29 @@ export interface PaymentTransactionsSelect<T extends boolean = true> {
   amountMinor?: T;
   currency?: T;
   status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-inbox_select".
+ */
+export interface PaymentInboxSelect<T extends boolean = true> {
+  semanticKey?: T;
+  deliveryKey?: T;
+  providerPaymentId?: T;
+  merchantReference?: T;
+  environment?: T;
+  amountMinor?: T;
+  currency?: T;
+  providerStatus?: T;
+  method?: T;
+  providerPaidAt?: T;
+  receivedAt?: T;
+  source?: T;
+  state?: T;
+  processedAt?: T;
+  reasonCode?: T;
   updatedAt?: T;
   createdAt?: T;
 }

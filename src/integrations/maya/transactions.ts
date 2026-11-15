@@ -1,16 +1,22 @@
 import {z} from 'zod'
-import type {ProviderPayment} from './types'
+import type {MayaEnvironment,ProviderPayment} from './types'
 import {parseProviderAmount,type MayaTransport} from './http'
 export class MayaReadUnavailable extends Error{constructor(){super('Maya response could not be verified')}}
 const instant=z.iso.datetime({offset:true}),status=z.string().regex(/^[A-Z_]{1,50}$/),reference=z.string().regex(/^[A-Za-z0-9_-]{1,36}$/)
 const paymentStatuses=new Set(['PENDING_TOKEN','PENDING_PAYMENT','FOR_AUTHENTICATION','AUTHENTICATING','AUTH_SUCCESS','AUTH_FAILED','PAYMENT_EXPIRED','PAYMENT_PROCESSING','PAYMENT_SUCCESS','PAYMENT_FAILED','PAYMENT_CANCELLED','VOIDED','REFUNDED','AUTHORIZED','CAPTURED','DONE','CAPTURE_HOLD_EXPIRED'])
-const paymentSchema=z.object({id:z.uuid(),requestReferenceNumber:reference,amount:z.union([z.string(),z.number()]).optional(),currency:z.string().regex(/^[A-Z]{3}$/).optional(),totalAmount:z.object({value:z.union([z.string(),z.number()]),currency:z.string().regex(/^[A-Z]{3}$/)}).optional(),status:status.optional(),paymentStatus:status.optional(),fundSource:z.object({type:z.string().max(80)}).nullish(),paymentAt:instant.nullish(),paymentDetails:z.object({paymentAt:instant.nullish()}).nullish(),canVoid:z.boolean().optional(),canRefund:z.boolean().optional(),environment:z.enum(['sandbox','production']).optional()})
-export function normalizePayment(transport:MayaTransport,input:unknown):ProviderPayment{
+const paymentSchema=z.object({id:z.uuid(),requestReferenceNumber:reference.optional(),amount:z.union([z.string(),z.number()]).optional(),currency:z.string().regex(/^[A-Z]{3}$/).optional(),totalAmount:z.object({value:z.union([z.string(),z.number()]),currency:z.string().regex(/^[A-Z]{3}$/)}).optional(),status:status.optional(),paymentStatus:status.optional(),fundSource:z.object({type:z.string().max(80)}).nullish(),paymentAt:instant.nullish(),paymentDetails:z.object({paymentAt:instant.nullish()}).nullish(),canVoid:z.boolean().optional(),canRefund:z.boolean().optional(),environment:z.enum(['sandbox','production']).optional()})
+export type MayaPaymentFacts=Omit<ProviderPayment,'reference'>&{reference:string|null}
+export function normalizePaymentFacts(environment:MayaEnvironment,input:unknown):MayaPaymentFacts{
   const row=paymentSchema.parse(input),amount=row.totalAmount?{minor:parseProviderAmount(row.totalAmount.value),currency:row.totalAmount.currency}:{minor:parseProviderAmount(row.amount),currency:row.currency!}
-  if(!amount.currency||!row.paymentStatus&&!row.status||row.environment&&row.environment!==transport.config.environment)throw new MayaReadUnavailable()
+  if(!amount.currency||!row.paymentStatus&&!row.status||row.environment&&row.environment!==environment)throw new MayaReadUnavailable()
   if(row.status&&row.paymentStatus&&paymentStatuses.has(row.status)&&row.status!==row.paymentStatus)throw new MayaReadUnavailable()
   if(row.totalAmount&&row.amount!==undefined&&(parseProviderAmount(row.amount)!==amount.minor||row.currency&&row.currency!==amount.currency))throw new MayaReadUnavailable()
-  return {id:row.id,environment:transport.config.environment,reference:row.requestReferenceNumber,amount,status:row.paymentStatus??row.status!,method:row.fundSource?.type??null,paidAt:row.paymentDetails?.paymentAt??row.paymentAt??null,canVoid:row.canVoid??false,canRefund:row.canRefund??false}
+  return {id:row.id,environment:environment,reference:row.requestReferenceNumber??null,amount,status:row.paymentStatus??row.status!,method:row.fundSource?.type??null,paidAt:row.paymentDetails?.paymentAt??row.paymentAt??null,canVoid:row.canVoid??false,canRefund:row.canRefund??false}
+}
+export function normalizePayment(transport:MayaTransport,input:unknown):ProviderPayment{
+  const facts=normalizePaymentFacts(transport.config.environment,input)
+  if(!facts.reference)throw new MayaReadUnavailable()
+  return {...facts,reference:facts.reference}
 }
 export async function retrievePayment(transport:MayaTransport,id:string,signal?:AbortSignal):Promise<ProviderPayment>{
   try{
