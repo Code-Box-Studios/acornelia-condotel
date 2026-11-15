@@ -5,6 +5,7 @@ import {registerCustomer,requestCustomerRecovery,activateCustomer,resetCustomerP
 import {loginCustomer,logoutCustomer} from '@/features/auth/login'
 import {readBoundedJson} from '@/http/body'
 import {readDraftSession,setDraftCookies,clearDraftCookies} from '@/features/booking/draft-http'
+import {clearQuoteBrowser} from '@/features/booking/quote-session'
 import {resumeCheckoutDraft,saveCheckoutDraft} from '@/features/booking/draft'
 function response(body:unknown,status=200){return Response.json(body,{status,headers:{'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}})}
 export async function POST(request:Request,{params}:{params:Promise<{action:string}>}){
@@ -12,7 +13,7 @@ export async function POST(request:Request,{params}:{params:Promise<{action:stri
   try{
     const ctx=await requestContext(request),payload=await getDatabase()
     if(action==='logout'){
-      const result=response({state:'signed-out'});result.headers.append('Set-Cookie',await logoutCustomer(payload,request.headers));clearDraftCookies(result.headers);return result
+      const result=response({state:'signed-out'});result.headers.append('Set-Cookie',await logoutCustomer(payload,request.headers));clearDraftCookies(result.headers);clearQuoteBrowser(result.headers);return result
     }
     const input=await readBoundedJson(request)
     if(action==='register')return response(await registerCustomer(ctx,input as {name:string;email:string}),202)

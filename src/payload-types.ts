@@ -68,6 +68,9 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    'rate-plans': RatePlan;
+    quotes: Quote;
+    'policy-versions': PolicyVersion;
     'room-blocks': RoomBlock;
     'booking-claims': BookingClaim;
     'booking-views': BookingView;
@@ -96,6 +99,9 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    'rate-plans': RatePlansSelect<false> | RatePlansSelect<true>;
+    quotes: QuotesSelect<false> | QuotesSelect<true>;
+    'policy-versions': PolicyVersionsSelect<false> | PolicyVersionsSelect<true>;
     'room-blocks': RoomBlocksSelect<false> | RoomBlocksSelect<true>;
     'booking-claims': BookingClaimsSelect<false> | BookingClaimsSelect<true>;
     'booking-views': BookingViewsSelect<false> | BookingViewsSelect<true>;
@@ -184,29 +190,27 @@ export interface CustomerAuthOperations {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "room-blocks".
+ * via the `definition` "rate-plans".
  */
-export interface RoomBlock {
+export interface RatePlan {
   id: string;
-  room: string | Room;
-  allocation: string | Allocation;
-  arrival: string;
-  departure: string;
-  reason: string;
-  state: 'active' | 'released';
-  releasedAt?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "rooms".
- */
-export interface Room {
-  id: string;
-  label: string;
-  roomType?: (string | null) | RoomType;
-  onSale?: boolean | null;
+  roomType: string | RoomType;
+  policyVersion: string | PolicyVersion;
+  revision: number;
+  rules:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  validFrom: string;
+  validUntil: string;
+  approved: boolean;
+  approvalReference?: string | null;
+  synthetic: boolean;
   updatedAt: string;
   createdAt: string;
 }
@@ -279,19 +283,122 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "allocations".
+ * via the `definition` "policy-versions".
  */
-export interface Allocation {
+export interface PolicyVersion {
   id: string;
-  room: string | Room;
-  booking?: (string | null) | Booking;
-  arrival: string;
-  departure: string;
-  purpose: 'hold' | 'booking' | 'block';
-  released: boolean;
-  deadline?: string | null;
+  revision: number;
+  approvedSections:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  sections:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  approved: boolean;
+  active: boolean;
+  approvalReference?: string | null;
+  synthetic: boolean;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "quotes".
+ */
+export interface Quote {
+  id: string;
+  version: number;
+  issuerCustomer?: (string | null) | Customer;
+  browserHash: string;
+  snapshot:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  policySnapshot:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  rateSnapshot:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  policyVersion: string | PolicyVersion;
+  rateVersion: string | RatePlan;
+  amountMinor: string;
+  currency: string;
+  issuedAt: string;
+  expiresAt: string;
+  acceptedAt?: string | null;
+  acceptedBy?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  consumedByBooking?: (string | null) | Booking;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customers".
+ */
+export interface Customer {
+  id: string;
+  securityRevision: number;
+  name: string;
+  deactivated?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
+  _verified?: boolean | null;
+  _verificationToken?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'customers';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -330,34 +437,47 @@ export interface Booking {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "customers".
+ * via the `definition` "room-blocks".
  */
-export interface Customer {
+export interface RoomBlock {
   id: string;
-  securityRevision: number;
-  name: string;
-  deactivated?: boolean | null;
+  room: string | Room;
+  allocation: string | Allocation;
+  arrival: string;
+  departure: string;
+  reason: string;
+  state: 'active' | 'released';
+  releasedAt?: string | null;
   updatedAt: string;
   createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  resetPasswordRequestedAt?: string | null;
-  _verified?: boolean | null;
-  _verificationToken?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
-  password?: string | null;
-  collection: 'customers';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rooms".
+ */
+export interface Room {
+  id: string;
+  label: string;
+  roomType?: (string | null) | RoomType;
+  onSale?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "allocations".
+ */
+export interface Allocation {
+  id: string;
+  room: string | Room;
+  booking?: (string | null) | Booking;
+  arrival: string;
+  departure: string;
+  purpose: 'hold' | 'booking' | 'block';
+  released: boolean;
+  deadline?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -693,6 +813,18 @@ export interface PayloadLockedDocument {
   id: string;
   document?:
     | ({
+        relationTo: 'rate-plans';
+        value: string | RatePlan;
+      } | null)
+    | ({
+        relationTo: 'quotes';
+        value: string | Quote;
+      } | null)
+    | ({
+        relationTo: 'policy-versions';
+        value: string | PolicyVersion;
+      } | null)
+    | ({
         relationTo: 'room-blocks';
         value: string | RoomBlock;
       } | null)
@@ -827,6 +959,61 @@ export interface PayloadMigration {
   batch?: number | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rate-plans_select".
+ */
+export interface RatePlansSelect<T extends boolean = true> {
+  roomType?: T;
+  policyVersion?: T;
+  revision?: T;
+  rules?: T;
+  validFrom?: T;
+  validUntil?: T;
+  approved?: T;
+  approvalReference?: T;
+  synthetic?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "quotes_select".
+ */
+export interface QuotesSelect<T extends boolean = true> {
+  version?: T;
+  issuerCustomer?: T;
+  browserHash?: T;
+  snapshot?: T;
+  policySnapshot?: T;
+  rateSnapshot?: T;
+  policyVersion?: T;
+  rateVersion?: T;
+  amountMinor?: T;
+  currency?: T;
+  issuedAt?: T;
+  expiresAt?: T;
+  acceptedAt?: T;
+  acceptedBy?: T;
+  consumedByBooking?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "policy-versions_select".
+ */
+export interface PolicyVersionsSelect<T extends boolean = true> {
+  revision?: T;
+  approvedSections?: T;
+  sections?: T;
+  approved?: T;
+  active?: T;
+  approvalReference?: T;
+  synthetic?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
