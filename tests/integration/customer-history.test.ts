@@ -75,7 +75,7 @@ describe('private customer booking history',()=>{
       fresh=await createHarness({databaseUrl:url.toString(),migrate:false})
       const imported=await import('@/migrations')
       const migrations=imported.migrations.map(m=>({...m,up:(args:unknown)=>m.up(args as MigrateUpArgs),down:(args:unknown)=>m.down(args as MigrateDownArgs)}))
-      await fresh.payload.db.migrate({migrations:migrations.slice(0,-1)})
+      await fresh.payload.db.migrate({migrations:migrations.slice(0,migrations.findIndex(m=>m.name==='20261115_182340_customer_history_claims'))})
       const owner=await fresh.seed('customers',{name:'Existing owner fixture',email:'existing@example.test',password:'Synthetic-history-passphrase-946!',_verified:true})
       const inserted=await fresh.pool.query("INSERT INTO bookings(owner_customer_id,status,revision,arrival,departure,accepted_quote,contact,source) VALUES($1,'confirmed',1,'2027-02-10','2027-02-12',$2,$3,'website') RETURNING id",[owner.id,JSON.stringify({total:{minor:'1234',currency:'PHP'}}),JSON.stringify({name:'Preserved fixture'})])
       await fresh.payload.db.migrate({migrations})

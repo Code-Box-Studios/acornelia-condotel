@@ -26,6 +26,7 @@ import {Enquiries} from './src/payload/collections/Enquiries'
 import {CheckoutDrafts} from './src/payload/collections/CheckoutDrafts'
 import {AuthTokens} from './src/payload/collections/AuthTokens'
 import {AuthDeliveries} from './src/payload/collections/AuthDeliveries'
+import {RoomBlocks} from './src/payload/collections/RoomBlocks'
 import {BookingClaims} from './src/payload/collections/BookingClaims'
 import {BookingViews} from './src/payload/collections/BookingViews'
 import {AuthThrottles} from './src/payload/collections/AuthThrottles'
@@ -36,7 +37,7 @@ export function createPayloadConfig(databaseUrl=process.env.DATABASE_URL,driver?
   serverURL:process.env.APP_URL || 'http://localhost:3042',
   admin:{user:'staff-users',importMap:{baseDir:dirname}},
   globals:[Property,SitePages,Policies].map(withGlobalStaffAudit),
-  collections:[BookingClaims,BookingViews,AuthTokens,AuthDeliveries,AuthThrottles,CheckoutDrafts,Posts,Enquiries,RoomTypes,Media,StaffUsers,Customers,Rooms,Bookings,Allocations,OfferAllocations,PaymentAttempts,PaymentTransactions,AuditEntries,WorkItems].map(withStaffAudit), editor:lexicalEditor(),sharp,
+  collections:[RoomBlocks,BookingClaims,BookingViews,AuthTokens,AuthDeliveries,AuthThrottles,CheckoutDrafts,Posts,Enquiries,RoomTypes,Media,StaffUsers,Customers,Rooms,Bookings,Allocations,OfferAllocations,PaymentAttempts,PaymentTransactions,AuditEntries,WorkItems].map(withStaffAudit), editor:lexicalEditor(),sharp,
   db:postgresAdapter({pg:driver,pool:{connectionString:databaseUrl,max:8},idType:'uuid',push:false,disableCreateDatabase:true,migrationDir:path.resolve(dirname,'src/migrations'),transactionOptions:{isolationLevel:'serializable'}}),
   typescript:{outputFile:path.resolve(dirname,'src/payload-types.ts')},
   csrf:[process.env.APP_URL || 'http://localhost:3042'],

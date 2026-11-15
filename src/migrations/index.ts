@@ -10,6 +10,7 @@ import * as migration_20261114_052943_editorial_fixture_guard from './20261114_0
 import * as migration_20261114_054413_checkout_drafts from './20261114_054413_checkout_drafts';
 import * as migration_20261114_055830_customer_auth_capabilities from './20261114_055830_customer_auth_capabilities';
 import * as migration_20261115_182340_customer_history_claims from './20261115_182340_customer_history_claims';
+import * as migration_20261115_183744_physical_inventory from './20261115_183744_physical_inventory';
 
 export const migrations = [
   {
@@ -70,6 +71,11 @@ export const migrations = [
   {
     up: migration_20261115_182340_customer_history_claims.up,
     down: migration_20261115_182340_customer_history_claims.down,
-    name: '20261115_182340_customer_history_claims'
+    name: '20261115_182340_customer_history_claims',
+  },
+  {
+    up: migration_20261115_183744_physical_inventory.up,
+    down: migration_20261115_183744_physical_inventory.down,
+    name: '20261115_183744_physical_inventory'
   },
 ];

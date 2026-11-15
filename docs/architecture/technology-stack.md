@@ -163,3 +163,5 @@ Activation/reset grants are hashed, expire, bind account/email/security revision
 
 
 Customer history uses Payload customer UUID relationships and PostgreSQL owner-immutability guards. It does not use email as an ownership key. The November 15 implementation includes a synthetic-tested operator-review claim protocol and separately revocable view capabilities. Production historical evidence and recovery authority remain Decision 05; no mailbox-only attachment or provider delivery has been enabled.
+
+Physical inventory now shares PostgreSQL exclusion guards across all allocation purposes. Published marketing types and physical units have separate sale state. November 15 local tests use synthetic stay/operations policy snapshots; production rules and opening inventory are still unapproved. The public availability endpoint therefore fails closed until approved policy resolution is configured.

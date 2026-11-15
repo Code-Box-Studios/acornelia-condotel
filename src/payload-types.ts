@@ -68,6 +68,7 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    'room-blocks': RoomBlock;
     'booking-claims': BookingClaim;
     'booking-views': BookingView;
     'auth-tokens': AuthToken;
@@ -95,6 +96,7 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    'room-blocks': RoomBlocksSelect<false> | RoomBlocksSelect<true>;
     'booking-claims': BookingClaimsSelect<false> | BookingClaimsSelect<true>;
     'booking-views': BookingViewsSelect<false> | BookingViewsSelect<true>;
     'auth-tokens': AuthTokensSelect<false> | AuthTokensSelect<true>;
@@ -182,30 +184,112 @@ export interface CustomerAuthOperations {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "booking-claims".
+ * via the `definition` "room-blocks".
  */
-export interface BookingClaim {
+export interface RoomBlock {
   id: string;
-  booking: string | Booking;
-  customer: string | Customer;
-  reviewer: string | StaffUser;
-  purpose: 'booking-claim';
-  tokenHash: string;
-  proof:
+  room: string | Room;
+  allocation: string | Allocation;
+  arrival: string;
+  departure: string;
+  reason: string;
+  state: 'active' | 'released';
+  releasedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rooms".
+ */
+export interface Room {
+  id: string;
+  label: string;
+  roomType?: (string | null) | RoomType;
+  onSale?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "room-types".
+ */
+export interface RoomType {
+  id: string;
+  name: string;
+  slug: string;
+  onSale?: boolean | null;
+  description?: string | null;
+  maxGuests?: number | null;
+  bedDescription?: string | null;
+  amenities?:
     | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
+        label: string;
+        id?: string | null;
+      }[]
     | null;
-  policyId: string;
-  policyRevision: number;
-  securityRevision: number;
-  expiresAt: string;
-  usedAt?: string | null;
-  revokedAt?: string | null;
+  gallery?:
+    | {
+        image: string | Media;
+        id?: string | null;
+      }[]
+    | null;
+  sortOrder?: number | null;
+  synthetic?: boolean | null;
+  privateNotes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * Local uploads persist on the development disk. Production storage must be configured before uploading.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: string;
+  alt: string;
+  source: string;
+  license: string;
+  accessClass: 'private' | 'public';
+  status: 'uploading' | 'ready' | 'deleting' | 'failed';
+  synthetic?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "allocations".
+ */
+export interface Allocation {
+  id: string;
+  room: string | Room;
+  booking?: (string | null) | Booking;
+  arrival: string;
+  departure: string;
+  purpose: 'hold' | 'booking' | 'block';
+  released: boolean;
+  deadline?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -274,6 +358,35 @@ export interface Customer {
     | null;
   password?: string | null;
   collection: 'customers';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "booking-claims".
+ */
+export interface BookingClaim {
+  id: string;
+  booking: string | Booking;
+  customer: string | Customer;
+  reviewer: string | StaffUser;
+  purpose: 'booking-claim';
+  tokenHash: string;
+  proof:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  policyId: string;
+  policyRevision: number;
+  securityRevision: number;
+  expiresAt: string;
+  usedAt?: string | null;
+  revokedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -402,42 +515,6 @@ export interface Post {
   _status?: ('draft' | 'published') | null;
 }
 /**
- * Local uploads persist on the development disk. Production storage must be configured before uploading.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
- */
-export interface Media {
-  id: string;
-  alt: string;
-  source: string;
-  license: string;
-  accessClass: 'private' | 'public';
-  status: 'uploading' | 'ready' | 'deleting' | 'failed';
-  synthetic?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
-  sizes?: {
-    thumbnail?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-  };
-}
-/**
  * An enquiry does not reserve a room or confirm payment.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -469,63 +546,6 @@ export interface Enquiry {
     | boolean
     | null;
   state: 'received' | 'delivery-pending' | 'delivered' | 'delivery-failed' | 'closed';
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "room-types".
- */
-export interface RoomType {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-  maxGuests?: number | null;
-  bedDescription?: string | null;
-  amenities?:
-    | {
-        label: string;
-        id?: string | null;
-      }[]
-    | null;
-  gallery?:
-    | {
-        image: string | Media;
-        id?: string | null;
-      }[]
-    | null;
-  sortOrder?: number | null;
-  synthetic?: boolean | null;
-  privateNotes?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "rooms".
- */
-export interface Room {
-  id: string;
-  label: string;
-  onSale?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "allocations".
- */
-export interface Allocation {
-  id: string;
-  room: string | Room;
-  booking?: (string | null) | Booking;
-  arrival: string;
-  departure: string;
-  purpose: 'hold' | 'booking' | 'block';
-  released: boolean;
-  deadline?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -673,6 +693,10 @@ export interface PayloadLockedDocument {
   id: string;
   document?:
     | ({
+        relationTo: 'room-blocks';
+        value: string | RoomBlock;
+      } | null)
+    | ({
         relationTo: 'booking-claims';
         value: string | BookingClaim;
       } | null)
@@ -806,6 +830,21 @@ export interface PayloadMigration {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "room-blocks_select".
+ */
+export interface RoomBlocksSelect<T extends boolean = true> {
+  room?: T;
+  allocation?: T;
+  arrival?: T;
+  departure?: T;
+  reason?: T;
+  state?: T;
+  releasedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "booking-claims_select".
  */
 export interface BookingClaimsSelect<T extends boolean = true> {
@@ -932,6 +971,7 @@ export interface EnquiriesSelect<T extends boolean = true> {
 export interface RoomTypesSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
+  onSale?: T;
   description?: T;
   maxGuests?: T;
   bedDescription?: T;
@@ -1051,6 +1091,7 @@ export interface CustomersSelect<T extends boolean = true> {
  */
 export interface RoomsSelect<T extends boolean = true> {
   label?: T;
+  roomType?: T;
   onSale?: T;
   updatedAt?: T;
   createdAt?: T;

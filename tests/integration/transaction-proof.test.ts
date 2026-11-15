@@ -67,8 +67,9 @@ describe('real PostgreSQL transaction and constraints',()=>{
       const imported=await import('@/migrations')
       const migrations=imported.migrations.map(m=>({...m,up:(args:unknown)=>m.up(args as MigrateUpArgs),down:(args:unknown)=>m.down(args as MigrateDownArgs)}))
       await fresh.payload.db.migrate({migrations:migrations.slice(0,1)})
-      const room=await fresh.seed('rooms',{label:'Opening fixture'})
-      await fresh.seed('bookings',bookingData)
+      // Seed the historical schema directly; the current Payload model includes later columns.
+      const room=(await fresh.pool.query("INSERT INTO rooms(label) VALUES('Opening fixture') RETURNING id")).rows[0] as {id:string}
+      await fresh.pool.query("INSERT INTO bookings(status,revision,arrival,departure,accepted_quote,contact,source) VALUES('held',1,$1,$2,$3,$4,'website')",[bookingData.arrival,bookingData.departure,JSON.stringify(bookingData.acceptedQuote),JSON.stringify(bookingData.contact)])
       await fresh.payload.db.migrate({migrations})
       expect(await fresh.rows('bookings')).toHaveLength(1)
       await fresh.pool.query('insert into allocations(room_id,arrival,departure) values($1,$2,$3)',[room.id,stay.arrival,stay.departure])
