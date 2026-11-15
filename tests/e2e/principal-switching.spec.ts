@@ -37,7 +37,7 @@ test('switches one browser from staff to customer without retaining staff access
   const customer=await h.seed('customers',{email:'customer@example.test',password,name:'Synthetic Customer',_verified:true})
   expect((await page.request.post('/api/staff-users/login',{headers:{origin},data:{email:staff.email,password}})).ok()).toBe(true)
   expect((await identity(page)).body.principal.kind).toBe('staff')
-  expect((await page.request.post('/api/customers/login',{headers:{origin},data:{email:customer.email,password}})).ok()).toBe(true)
+  expect((await page.request.post('/api/identity/customer/login',{headers:{origin},data:{email:customer.email,password}})).ok()).toBe(true)
   const current=await identity(page)
   expect(current.body.principal).toEqual({kind:'customer',collection:'customers',id:customer.id})
   expect(current.cache).toContain('no-store')
@@ -51,13 +51,13 @@ test('switches one browser from staff to customer without retaining staff access
 
 test('revokes the cookie session on logout and deactivation',async({page,context})=>{
   const customer=await h.seed('customers',{email:'customer@example.test',password,name:'Synthetic Customer',_verified:true})
-  expect((await page.request.post('/api/customers/login',{headers:{origin},data:{email:customer.email,password}})).ok()).toBe(true)
+  expect((await page.request.post('/api/identity/customer/login',{headers:{origin},data:{email:customer.email,password}})).ok()).toBe(true)
   const saved=(await context.cookies()).find(x=>x.name==='acornelia-token')!
   expect((await identity(page)).body.principal.kind).toBe('customer')
-  expect((await page.request.post('/api/customers/logout',{headers:{origin}})).ok()).toBe(true)
+  expect((await page.request.post('/api/identity/customer/logout',{headers:{origin}})).ok()).toBe(true)
   const replay=await page.request.get('/api/identity/me',{headers:{origin,cookie:`${saved.name}=${saved.value}`}})
   expect((await replay.json()).principal.kind).toBe('anonymous')
-  expect((await page.request.post('/api/customers/login',{headers:{origin},data:{email:customer.email,password}})).ok()).toBe(true)
+  expect((await page.request.post('/api/identity/customer/login',{headers:{origin},data:{email:customer.email,password}})).ok()).toBe(true)
   await h.payload.update({collection:'customers',id:customer.id,data:{deactivated:true},overrideAccess:true})
   expect((await identity(page)).body.principal.kind).toBe('anonymous')
   const native=await page.request.get('/api/customers/me',{headers:{origin}})

@@ -15,10 +15,10 @@ const changed:CollectionAfterChangeHook=async({doc,previousDoc,operation,req,col
 }
 async function authEvent(req:Parameters<CollectionAfterChangeHook>[0]['req'],action:string){
   const actor=eventActor(req)
-  if(actor.kind!=='staff')return
+  if(actor.kind!=='staff'&&actor.kind!=='customer')return
   const auditReq=await createLocalReq({user:req.user??undefined,req:{...req}},req.payload)
   trustCommand(auditReq,actor)
-  await appendAudit({payload:req.payload,req:auditReq,actor},{action,recordType:'staff-users',recordId:actor.id,outcome:'success'})
+  await appendAudit({payload:req.payload,req:auditReq,actor},{action,recordType:actor.collection,recordId:actor.id,outcome:'success'})
 }
 export function withStaffAudit(collection:CollectionConfig):CollectionConfig{
   const existing=collection.hooks||{}
@@ -33,9 +33,9 @@ export function withStaffAudit(collection:CollectionConfig):CollectionConfig{
       }
       return doc
     }]}:{}),
-    ...(collection.slug==='staff-users'?{
-      afterLogin:[...(existing.afterLogin||[]),async({req})=>{await authEvent(req,'staff:login')}],
-      afterLogout:[...(existing.afterLogout||[]),async({req})=>{await authEvent(req,'staff:logout')}],
+    ...(['staff-users','customers'].includes(collection.slug)?{
+      afterLogin:[...(existing.afterLogin||[]),async({req})=>{await authEvent(req,collection.slug==='staff-users'?'staff:login':'customer:login')}],
+      afterLogout:[...(existing.afterLogout||[]),async({req})=>{await authEvent(req,collection.slug==='staff-users'?'staff:logout':'customer:logout')}],
     }:{}),
     ...(sensitive.has(collection.slug)?{afterOperation:[...(existing.afterOperation||[]),async args=>{
       if(['find','findByID','count'].includes(args.operation)&&!commandActor(args.req)){

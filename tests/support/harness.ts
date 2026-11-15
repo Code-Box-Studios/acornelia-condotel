@@ -7,6 +7,7 @@ import type {Principal} from '@/domain/shared/types'
 import type {CommandContext} from '@/domain/db/types'
 import {syntheticPolicy} from './policies'
 import {ownedPostgresDriver} from './owned-pg'
+type SeedInput<C extends CollectionSlug>=C extends 'customers'?Omit<RequiredDataFromCollectionSlug<C>,'securityRevision'>&{securityRevision?:number}:RequiredDataFromCollectionSlug<C>
 export async function createHarness(options:{databaseUrl?:string;migrate?:boolean}={}){
   const value=options.databaseUrl||process.env.TEST_DATABASE_URL
   if(!value)throw new Error('An isolated TEST_DATABASE_URL is required')
@@ -26,7 +27,7 @@ export async function createHarness(options:{databaseUrl?:string;migrate?:boolea
   return {
     payload,pool,clock,uow,
     ctx(actor:Principal):CommandContext{return {actor,clock,uow,policy:syntheticPolicy(),requestId:randomUUID()}},
-    async seed<C extends CollectionSlug>(collection:C,data:RequiredDataFromCollectionSlug<C>){return payload.create({collection,data,disableVerificationEmail:true,overrideAccess:true})},
+    async seed<C extends CollectionSlug>(collection:C,data:SeedInput<C>){const seeded={...(collection==='customers'?{securityRevision:1}:{}),...data} as RequiredDataFromCollectionSlug<C>;return payload.create({collection,data:seeded,disableVerificationEmail:true,overrideAccess:true})},
     async rows<C extends CollectionSlug>(collection:C,where:Where={}){return (await payload.find({collection,where,limit:1000,depth:0,overrideAccess:true})).docs},
     async reset(){
       const tables=await pool.query("select tablename from pg_tables where schemaname='public' and tablename<>'payload_migrations'")

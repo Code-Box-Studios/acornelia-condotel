@@ -7,6 +7,8 @@ import * as migration_20261114_044747_public_content from './20261114_044747_pub
 import * as migration_20261114_050156_public_headline from './20261114_050156_public_headline';
 import * as migration_20261114_051441_posts_enquiries from './20261114_051441_posts_enquiries';
 import * as migration_20261114_052943_editorial_fixture_guard from './20261114_052943_editorial_fixture_guard';
+import * as migration_20261114_054413_checkout_drafts from './20261114_054413_checkout_drafts';
+import * as migration_20261114_055830_customer_auth_capabilities from './20261114_055830_customer_auth_capabilities';
 
 export const migrations = [
   {
@@ -52,6 +54,16 @@ export const migrations = [
   {
     up: migration_20261114_052943_editorial_fixture_guard.up,
     down: migration_20261114_052943_editorial_fixture_guard.down,
-    name: '20261114_052943_editorial_fixture_guard'
+    name: '20261114_052943_editorial_fixture_guard',
+  },
+  {
+    up: migration_20261114_054413_checkout_drafts.up,
+    down: migration_20261114_054413_checkout_drafts.down,
+    name: '20261114_054413_checkout_drafts',
+  },
+  {
+    up: migration_20261114_055830_customer_auth_capabilities.up,
+    down: migration_20261114_055830_customer_auth_capabilities.down,
+    name: '20261114_055830_customer_auth_capabilities'
   },
 ];

@@ -68,6 +68,10 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    'auth-tokens': AuthToken;
+    'auth-deliveries': AuthDelivery;
+    'auth-throttles': AuthThrottle;
+    'checkout-drafts': CheckoutDraft;
     posts: Post;
     enquiries: Enquiry;
     'room-types': RoomType;
@@ -89,6 +93,10 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    'auth-tokens': AuthTokensSelect<false> | AuthTokensSelect<true>;
+    'auth-deliveries': AuthDeliveriesSelect<false> | AuthDeliveriesSelect<true>;
+    'auth-throttles': AuthThrottlesSelect<false> | AuthThrottlesSelect<true>;
+    'checkout-drafts': CheckoutDraftsSelect<false> | CheckoutDraftsSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     enquiries: EnquiriesSelect<false> | EnquiriesSelect<true>;
     'room-types': RoomTypesSelect<false> | RoomTypesSelect<true>;
@@ -167,6 +175,95 @@ export interface CustomerAuthOperations {
     email: string;
     password: string;
   };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "auth-tokens".
+ */
+export interface AuthToken {
+  id: string;
+  tokenHash: string;
+  purpose: 'verify' | 'reset';
+  account: string | Customer;
+  emailHash: string;
+  securityRevision: number;
+  expiresAt: string;
+  usedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customers".
+ */
+export interface Customer {
+  id: string;
+  securityRevision: number;
+  name: string;
+  deactivated?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
+  _verified?: boolean | null;
+  _verificationToken?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'customers';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "auth-deliveries".
+ */
+export interface AuthDelivery {
+  id: string;
+  purpose: 'verify' | 'reset';
+  account: string | Customer;
+  tokenRef: string | AuthToken;
+  expiresAt: string;
+  encryptedState: string;
+  state: 'pending' | 'delivered' | 'failed' | 'cancelled';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "auth-throttles".
+ */
+export interface AuthThrottle {
+  id: string;
+  key: string;
+  count: number;
+  expiresAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "checkout-drafts".
+ */
+export interface CheckoutDraft {
+  id: string;
+  secretHash: string;
+  browserHash: string;
+  ownerCustomerId?: string | null;
+  expiresAt: string;
+  version: number;
+  encryptedState: string;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -323,36 +420,6 @@ export interface StaffUser {
     | null;
   password?: string | null;
   collection: 'staff-users';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "customers".
- */
-export interface Customer {
-  id: string;
-  name: string;
-  deactivated?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  resetPasswordRequestedAt?: string | null;
-  _verified?: boolean | null;
-  _verificationToken?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
-  password?: string | null;
-  collection: 'customers';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -560,6 +627,22 @@ export interface PayloadLockedDocument {
   id: string;
   document?:
     | ({
+        relationTo: 'auth-tokens';
+        value: string | AuthToken;
+      } | null)
+    | ({
+        relationTo: 'auth-deliveries';
+        value: string | AuthDelivery;
+      } | null)
+    | ({
+        relationTo: 'auth-throttles';
+        value: string | AuthThrottle;
+      } | null)
+    | ({
+        relationTo: 'checkout-drafts';
+        value: string | CheckoutDraft;
+      } | null)
+    | ({
         relationTo: 'posts';
         value: string | Post;
       } | null)
@@ -666,6 +749,60 @@ export interface PayloadMigration {
   batch?: number | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "auth-tokens_select".
+ */
+export interface AuthTokensSelect<T extends boolean = true> {
+  tokenHash?: T;
+  purpose?: T;
+  account?: T;
+  emailHash?: T;
+  securityRevision?: T;
+  expiresAt?: T;
+  usedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "auth-deliveries_select".
+ */
+export interface AuthDeliveriesSelect<T extends boolean = true> {
+  purpose?: T;
+  account?: T;
+  tokenRef?: T;
+  expiresAt?: T;
+  encryptedState?: T;
+  state?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "auth-throttles_select".
+ */
+export interface AuthThrottlesSelect<T extends boolean = true> {
+  key?: T;
+  count?: T;
+  expiresAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "checkout-drafts_select".
+ */
+export interface CheckoutDraftsSelect<T extends boolean = true> {
+  secretHash?: T;
+  browserHash?: T;
+  ownerCustomerId?: T;
+  expiresAt?: T;
+  version?: T;
+  encryptedState?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -799,6 +936,7 @@ export interface StaffUsersSelect<T extends boolean = true> {
  * via the `definition` "customers_select".
  */
 export interface CustomersSelect<T extends boolean = true> {
+  securityRevision?: T;
   name?: T;
   deactivated?: T;
   updatedAt?: T;

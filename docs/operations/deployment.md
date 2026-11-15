@@ -227,3 +227,35 @@ Enquiries persist contact details, explicit privacy consent, an immutable contex
 Work is queued with an enquiry record ID only. Delivery execution and Brevo transport remain Tasks 13/20; a received enquiry is not an email-delivery claim. Staff can review saved enquiries in the protected CMS. Development seeding adds labeled sample stories/events, preserves existing records, and stores a synthetic flag. Production projections exclude sample posts and production publication rejects them.
 
 The combined local suite has 68 passing automated checks and 32 Chromium desktop/mobile browser checks. Separate sessions proved draft preview, publication, reload persistence and immediate withdrawal. Direct private Posts requests failed, and contextual enquiries created no allocation/payment. A proposed property-midnight boundary was tested. These checks do not approve the production timezone, contact/retention policy, venue material or hosted providers.
+
+
+### Customer access and checkout continuity — November 14, 2026
+
+The local customer pages are `/account/login`, `/account/register`, `/account/activate`, `/account/recover` and `/account/reset`. The controlled POST routes live under `/api/identity/customer/[action]`. Native generated customer authentication endpoints are blocked to keep responses, expiry and recovery under the application's tested policy. Customer profile create/update remains denied on generated collection routes; narrow server actions use whitelisted data and verified token authority for the required privileged writes.
+
+The candidate registers name/email, then asks the recipient to choose a password during activation. Passwords require 12–128 characters in this candidate. A verification grant lasts 60 minutes; a reset grant lasts 20 minutes. Both are one-use and bind the current account/email/security revision. Reset clears active sessions and invalidates other old grants; it does not log in automatically or reactivate an inactive account. Registration does not overwrite an existing verified account. The unused native verification token is cleared rather than retained as an alternate activation path. Signup/recovery acknowledgements remain generic under missing, existing, inactive and throttled addresses. Three email instructions per address/purpose/hour is a local technical cap, not an approved production abuse policy. Dummy password work reduces obvious differences in failure paths; it is not a measured constant-time claim.
+
+Auth mail parameters are encrypted in `auth-deliveries`, with hashed grants in `auth-tokens`. Work refers only to the delivery ID. No auth links go into the booking-confirmation CC. The email worker/transport remains Task 20. Future templates must use `/account/activate#token=...` or `/account/reset#token=...`: fragments are read and removed by the browser, so the token does not enter the HTTP page URL or referrer. Redemption is an explicit POST. Private responses use no-store and no-referrer. Tests decrypt synthetic outbox records to capture mail; no real email was sent.
+
+Checkout drafts last 30 minutes from creation and require both an opaque HttpOnly reference and a separate browser binding. Draft contact/state is encrypted with authenticated row scope. The application secret protects this short-lived state; rotating it invalidates those drafts and pending auth-delivery parameters. These are not retained financial records. Preserve the current secret for ordinary local restarts. A rotated/recovered environment must cancel/reissue pending auth instructions through the later recovery procedure rather than replay old links.
+
+`POST /api/checkout/draft` accepts only validated stay/guest/contact fields. It rejects financial or ownership fields. Version checks reject a stale tab update. Starting a new selection can create a fresh draft after an expired reference; ordinary saves do not extend the server deadline. The cookie never appears in a return URL. Login, failure and cancellation preserve the guest draft; a successful customer save binds only that prospective draft to the authenticated customer ID. It does not attach past bookings or reprice an accepted attempt. A draft owned by another account cannot be resumed. Logout clears the browser's draft cookies, and identity transitions fetch a fresh document to discard the current page's private router state. Complete cross-tab lifecycle/visibility handling remains Task 25.
+
+Return destinations are a fixed allowlist: `/book`, `/account`, `/account/bookings` and `/account/offers`. Account discovery by email is not a public API. A staff session must explicitly switch to a customer or guest session for personal website checkout; staff booking operations remain separate. The local neutral invitation copy still needs production approval.
+
+Cookie-authenticated non-browser test clients must supply the configured Origin or an accepted Sec-Fetch-Site header. Payload's pinned extraction policy rejects cookie-only requests with neither header. Browser requests supply the metadata automatically. Tests explicitly verify an active session before asserting its revocation; an anonymous response from an incomplete test request is not revocation evidence.
+
+Production access remains disabled until Decision 05, the approved policy sections, delivery credentials, privacy/retention terms and isolated provider checks are complete. Current generic acknowledgements do not prove email delivery, production account creation or permission to use mailbox control as historical-booking claim evidence.
+
+
+### Isolated test database setup
+
+After starting the dedicated local database, create the isolated test database once if it does not exist:
+
+```sh
+docker compose exec -T database psql -U acornelia -d postgres -c 'CREATE DATABASE acornelia_test'
+```
+
+PostgreSQL rejects an already existing name; this command does not reset it. The test harness verifies the exact local target before truncating its fixture tables. Development data remains in `acornelia_dev`. The test database is required for `pnpm test` and the Chromium browser suites.
+
+Development seed images now live in tracked `fixtures/media/`, so a fresh clone does not depend on the separate `.lavish` review workspace. The two copies match the originals and are excluded from server build traces. Existing CMS records and design artifacts are preserved.

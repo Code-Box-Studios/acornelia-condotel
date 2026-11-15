@@ -151,3 +151,12 @@ The Payload Drizzle 3.93.0 dependency has a versioned pnpm patch for commit-erro
 
 
 The test toolchain now pins Vite 8.3.8 and esbuild 0.28.2 explicitly. The prior lockfile bound one Vite instance to an incompatible esbuild peer through another dependency. Explicit compatible test dependencies corrected that binding; `pnpm peers check` reports no peer issues. Existing deprecated transitive CLI packages remain upstream dependencies.
+
+
+### Customer authentication candidate — November 14, 2026
+
+The user selected Payload for customer accounts. The exact login/recovery method remains an unanswered Decision 05. The local candidate is email/password with email-first activation: registration sends a one-use link; the email recipient then chooses the password. A random unknown placeholder prevents an attacker from choosing a future account holder's initial password through pre-registration. Existing verified accounts are not overwritten by registration.
+
+Payload remains the credential/session authority. The application calls its public authentication operations and emits its standard HttpOnly cookie; tokens do not enter the JSON response. Controlled routes replace generated customer login/verification/recovery/reset/refresh/logout HTTP surfaces. Customer accounts remain separate from staff accounts. Registration and recovery return generic acknowledgements, and checkout shows the same neutral login/guest invitation for all valid email addresses. Similar addresses never establish identity.
+
+Activation/reset grants are hashed, expire, bind account/email/security revision, and are consumed in the same transaction as the protected change and action log. Delivery parameters are encrypted in a private outbox; actual transport remains Task 20. Production requires the selected method plus approved `customer-auth` policy; recovery additionally requires approved `customer-recovery` policy. This implements a candidate without declaring those decisions approved. No Supabase Auth integration or additional subscription was introduced.

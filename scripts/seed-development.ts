@@ -31,7 +31,7 @@ const store=createMediaStore(payload)
 async function image(filename:string,alt:string){
   const existing=await payload.find({collection:'media',where:{and:[{source:{equals:`Local concept: ${filename}`}},{status:{equals:'ready'}}]},limit:1,overrideAccess:true})
   if(existing.docs[0])return existing.docs[0].id
-  return (await store.put(actor,{bytes:readFileSync(`.lavish/${filename}`),filename,mimeType:'image/webp',alt,source:`Local concept: ${filename}`,license:'Project-generated visual concept for local review; not verified property photography. See docs/design/acornelia-image-provenance.md.',accessClass:'public',synthetic:true})).id
+  return (await store.put(actor,{bytes:readFileSync(`fixtures/media/${filename}`),filename,mimeType:'image/webp',alt,source:`Local concept: ${filename}`,license:'Project-generated visual concept for local review; not verified property photography. See docs/design/acornelia-image-provenance.md.',accessClass:'public',synthetic:true})).id
 }
 const property=await payload.findGlobal({slug:'property',overrideAccess:true})
 if(!property.name){

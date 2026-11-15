@@ -2,6 +2,7 @@ import {NextResponse,type NextRequest} from 'next/server'
 import {recordGatewayRefusal} from '@/domain/audit/events'
 function privateResponse(response:NextResponse):NextResponse{
   response.headers.set('Cache-Control','private, no-store, max-age=0')
+  response.headers.set('Referrer-Policy','no-referrer')
   response.headers.set('Vary','Cookie, Authorization')
   return response
 }
@@ -14,6 +15,7 @@ export function proxy(request:NextRequest){
   try{path=decodeURIComponent(request.nextUrl.pathname).replace(/\/+$/,'')}catch{return refuse(400,'Invalid request','invalid')}
   // Payload's first-register endpoint bypasses ordinary create access when no user exists.
   if(/^\/api\/(staff-users|customers)\/first-register$/.test(path))return refuse(403,'Account creation is unavailable here','bootstrap')
+  if(/^\/api\/customers\/(login|logout|forgot-password|reset-password|refresh-token|verify(?:\/.*)?)$/.test(path))return refuse(403,'Use the customer account form','disabled')
   if(path==='/admin/create-first-user')return refuse(403,'Staff access requires the property operator','bootstrap')
   if(process.env.APP_OPERATION_MODE!=='normal')return refuse(503,'This service is temporarily unavailable')
   if(/^\/api\/(staff-users|customers)\/forgot-password$/.test(path)&&!process.env.EMAIL_TRANSPORT)return refuse(503,'Account recovery is temporarily unavailable')

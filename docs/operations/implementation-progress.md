@@ -13,7 +13,8 @@ Started November 13, 2026, following the user's instruction to implement the rev
 - Task 05: property/page/policy globals, published room-type projections and local durable media are implemented. The full suite has 57 passing tests, with 16 Chromium desktop/mobile browser checks. TypeScript, lint and the optimized build passed. Failed upload/delete recovery was tested against the isolated local filesystem; hosted storage remains gated.
 - Task 06: the public Warm Boutique composition is implemented as a provisional local review. Home, room discovery/detail, about, contact, policy pages, image gallery, light/dark controls and validated search handoff are built. The full current suite has 57 passing tests and 28 Chromium desktop/mobile checks; lint, TypeScript and the optimized build passed. Key text/button contrast passes 4.5:1 in both themes. Desktop/mobile light and dark screenshots were inspected. Production design, real content and live booking remain gated.
 - Task 07: persistent Stories/Events, staff-only draft previews, immediate public withdrawal, filters and contextual/general enquiries are implemented. The combined suite has 68 passing tests and 32 Chromium desktop/mobile checks; lint, TypeScript and peer checks pass. The optimized build passed.
-- Tasks 08–29 remain pending. Optional customer access and checkout continuity are next.
+- Task 08: optional customer access and private checkout continuity are implemented as a local email/password candidate. The combined suite has 80 passing tests and 42 Chromium desktop/mobile checks. Lint, TypeScript and the optimized build passed. The refreshed local account and checkout preview was inspected on desktop and mobile. Production login/recovery choices and actual email transport remain gated.
+- Tasks 09–29 remain pending. Private booking history and separately approved claims are next.
 
 ## Decision status
 

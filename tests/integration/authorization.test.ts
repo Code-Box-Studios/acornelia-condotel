@@ -55,7 +55,7 @@ describe('customer and staff authorization boundaries',()=>{
     await expect(h.payload.find({collection:'customers',user,overrideAccess:false})).rejects.toThrow()
   })
   it('refuses direct registration with protected verification or role fields',async()=>{
-    await expect(h.payload.create({collection:'customers',data:{name:'Attacker',email:'attacker@example.test',password,_verified:true},overrideAccess:false})).rejects.toThrow()
+    await expect(h.payload.create({collection:'customers',data:{name:'Attacker',email:'attacker@example.test',password,_verified:true,securityRevision:1},overrideAccess:false})).rejects.toThrow()
     expect(await h.rows('customers')).toHaveLength(0)
   })
   it('never lets a normal staff account grant developer role or read protected logs',async()=>{
