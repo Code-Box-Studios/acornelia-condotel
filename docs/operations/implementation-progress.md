@@ -21,7 +21,8 @@ Started November 13, 2026, following the user's instruction to implement the rev
 - Task 13: durable outbox records, generation-fenced leases, protected runner entry and safe replay are implemented locally. Validation is recorded below. Live transports and scheduling remain gated.
 - Task 14: atomic checkout preparation and command replay are implemented. All 165 automated checks and all 62 Chromium desktop/mobile checks passed. Lint, TypeScript, development migration and optimized build passed.
 - Task 15: the Maya transport boundary is implemented and checked against official API/domain guides and the official Maya plugin. All 184 automated checks, including 19 provider contract cases, passed. Lint, TypeScript and optimized build passed. No real provider connection or merchant capability was verified.
-- Tasks 16–29 remain pending. Complete checkout UI and fenced provider dispatch are next.
+- Task 16 is in progress. Its dispatch/private-status backend increment passes 195 automated checks and an optimized build; public HTTP wiring and checkout/payment UI remain unfinished.
+- Tasks 17–29 remain pending.
 
 ## Decision status
 
@@ -100,3 +101,16 @@ The server adapter isolates exact one-time Checkout creation, payment/reference 
 Current official source review caught obsolete remembered production API/checkout hosts; regressions pin `pg.maya.ph` and the documented returned payment hosts. Two other red regressions exposed contradictory payment-specific fields and a refund just beyond the 180-day elapsed limit; both now fail closed. Void/refund preflight re-retrieves the payment, checks actual provider/method/time/amount eligibility and conservatively accounts for remote pending/successful refunds. Local reservation/concurrency and complete ownership/recovery fences remain the owning later tasks.
 
 Task 15 validation: all 184 automated checks passed, including 19 contract cases and a real loopback native-fetch HTTP exchange. Lint, TypeScript and optimized build passed. These tests use synthetic local responses. There is no environment-configured gateway or registered provider handler yet; no real Maya, refund or email request was sent. Public/customer UI did not change in this task; its latest 62 desktop/mobile checks are the Task 14 run. [Source contracts and remaining merchant/release gates](../architecture/2026-11-15-maya-contract.md) distinguish current guides/plugin evidence, older supplementary API material and unverified live behavior.
+
+
+## Checkout dispatch and private status backend checkpoint — November 15, 2026
+
+Task 16 remains in progress. Its internal dispatch command now verifies the started work lease, current operational approval and frozen booking/quote/customer/contact/price/revision/deadline context before creation. It stores canonical uncertainty and a reconciliation intent before calling the gateway outside the database transaction. A ready association is applied only through live fenced completion. Lost or late results cannot dispatch another create or overwrite a newer worker; holds remain occupied pending a verified outcome.
+
+Internal status helpers use a separate checkout-status capability, purpose-bound token digest, original browser and issuing customer checks, fixed approved lifetime, revocation and bounded polling. General booking-view credentials and public booking IDs do not grant status access. Nonzero confirmation also requires matching canonical collection evidence; a booking flag or redirect outcome alone is insufficient. A ready handoff atomically becomes pending with reconciliation/audit work, so only one of concurrent handoffs succeeds. Pending does not mean paid.
+
+Migration `20261115_212448_checkout_status_dispatch` adds scoped view fields, a nullable immutable draft command key and a one-time provider environment association. Existing records retain their historical purpose; customer references restrict deletion and SQL guards prevent scope changes or unrevocation. The draft command key column is not yet connected to the draft UI/API. Status values use an explicit approved `checkoutStatus` policy section; the local fixture is not a production operating decision.
+
+Checkpoint validation: all 195 automated checks passed, including 11 dispatch/status integration cases, real handoff concurrency, stale completions, browser/customer isolation, expiry/revocation, polling limits and SQL scope protection. Lint/typecheck, the local development migration and optimized build passed. No provider request was sent; injected gateways supplied synthetic outcomes. The latest public/customer browser run remains the 62 Task 14 checks because this checkpoint introduces no UI changes.
+
+Remaining Task 16 work includes the environment-configured gateway/worker registration, scoped status cookies and HTTP routes, lost-response recovery, required final phone/optional requests, frozen public terms, quote/offer review and payment screens, and desktop/mobile/keyboard/two-tab tests. No public status endpoint, live Maya dispatch or complete checkout UI is claimed by this checkpoint.

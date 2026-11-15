@@ -594,6 +594,9 @@ export interface BookingView {
   id: string;
   booking: string | Booking;
   tokenHash: string;
+  purpose: 'booking-view' | 'checkout-status';
+  browserHash?: string | null;
+  customer?: (string | null) | Customer;
   expiresAt: string;
   revokedAt?: string | null;
   updatedAt: string;
@@ -651,6 +654,7 @@ export interface CheckoutDraft {
   secretHash: string;
   browserHash: string;
   ownerCustomerId?: string | null;
+  commandKey?: string | null;
   expiresAt: string;
   version: number;
   encryptedState: string;
@@ -764,6 +768,7 @@ export interface PaymentAttempt {
   deadline: string;
   checkoutUrl?: string | null;
   providerCheckoutId?: string | null;
+  providerEnvironment?: ('sandbox' | 'production') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1151,6 +1156,9 @@ export interface BookingClaimsSelect<T extends boolean = true> {
 export interface BookingViewsSelect<T extends boolean = true> {
   booking?: T;
   tokenHash?: T;
+  purpose?: T;
+  browserHash?: T;
+  customer?: T;
   expiresAt?: T;
   revokedAt?: T;
   updatedAt?: T;
@@ -1204,6 +1212,7 @@ export interface CheckoutDraftsSelect<T extends boolean = true> {
   secretHash?: T;
   browserHash?: T;
   ownerCustomerId?: T;
+  commandKey?: T;
   expiresAt?: T;
   version?: T;
   encryptedState?: T;
@@ -1451,6 +1460,7 @@ export interface PaymentAttemptsSelect<T extends boolean = true> {
   deadline?: T;
   checkoutUrl?: T;
   providerCheckoutId?: T;
+  providerEnvironment?: T;
   updatedAt?: T;
   createdAt?: T;
 }

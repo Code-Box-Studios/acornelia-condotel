@@ -13,5 +13,6 @@ export const PaymentAttempts: CollectionConfig={
     {name:'revision',type:'number',required:true,min:1},
     select('state',['preparing','ready','unknown','pending','succeeded','closed'],'preparing'),
     date('deadline'),{name:'checkoutUrl',type:'text'},{name:'providerCheckoutId',type:'text'},
+    {name:'providerEnvironment',type:'select',options:['sandbox','production']},
   ],
 }

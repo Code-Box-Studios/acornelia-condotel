@@ -15,6 +15,7 @@ import * as migration_20261115_185704_immutable_quotes_rates from './20261115_18
 import * as migration_20261115_193116_account_offer_usage from './20261115_193116_account_offer_usage';
 import * as migration_20261115_203440_durable_work from './20261115_203440_durable_work';
 import * as migration_20261115_204353_atomic_checkout from './20261115_204353_atomic_checkout';
+import * as migration_20261115_212448_checkout_status_dispatch from './20261115_212448_checkout_status_dispatch';
 
 export const migrations = [
   {
@@ -100,6 +101,11 @@ export const migrations = [
   {
     up: migration_20261115_204353_atomic_checkout.up,
     down: migration_20261115_204353_atomic_checkout.down,
-    name: '20261115_204353_atomic_checkout'
+    name: '20261115_204353_atomic_checkout',
+  },
+  {
+    up: migration_20261115_212448_checkout_status_dispatch.up,
+    down: migration_20261115_212448_checkout_status_dispatch.down,
+    name: '20261115_212448_checkout_status_dispatch'
   },
 ];

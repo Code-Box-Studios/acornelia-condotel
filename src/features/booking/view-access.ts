@@ -11,7 +11,7 @@ const viewSchema=z.object({id:z.uuid(),bookingId:z.uuid(),token:z.string().regex
 export async function createBookingView(tx:DbTx,bookingId:string,expiresAt:string):Promise<BookingViewRef>{
   if(!commandActor(tx.req)||!tx.req.transactionID)throw new Error('Booking views require a trusted transaction')
   z.uuid().parse(bookingId);z.iso.datetime().parse(expiresAt)
-  const token=opaqueSecret(),row=await tx.payload.create({collection:'booking-views',data:{booking:bookingId,tokenHash:privateDigest('booking-view\0'+token),expiresAt},req:tx.req,overrideAccess:false})
+  const token=opaqueSecret(),row=await tx.payload.create({collection:'booking-views',data:{booking:bookingId,purpose:'booking-view',tokenHash:privateDigest('booking-view\0'+token),expiresAt},req:tx.req,overrideAccess:false})
   return {id:row.id,bookingId,token}
 }
 export async function verifyBookingView(ctx:CommandContext,input:BookingViewRef):Promise<BookingSummary|null>{

@@ -5,6 +5,8 @@ export const BookingViews:CollectionConfig={
   fields:[
     {name:'booking',type:'relationship',relationTo:'bookings',required:true,index:true},
     {name:'tokenHash',type:'text',required:true,unique:true},
+    {name:'purpose',type:'select',options:['booking-view','checkout-status'],required:true,defaultValue:'booking-view'},
+    {name:'browserHash',type:'text'},{name:'customer',type:'relationship',relationTo:'customers',index:true},
     {name:'expiresAt',type:'date',required:true,index:true},{name:'revokedAt',type:'date'},
   ],
 }
