@@ -14,7 +14,8 @@ Started November 13, 2026, following the user's instruction to implement the rev
 - Task 06: the public Warm Boutique composition is implemented as a provisional local review. Home, room discovery/detail, about, contact, policy pages, image gallery, light/dark controls and validated search handoff are built. The full current suite has 57 passing tests and 28 Chromium desktop/mobile checks; lint, TypeScript and the optimized build passed. Key text/button contrast passes 4.5:1 in both themes. Desktop/mobile light and dark screenshots were inspected. Production design, real content and live booking remain gated.
 - Task 07: persistent Stories/Events, staff-only draft previews, immediate public withdrawal, filters and contextual/general enquiries are implemented. The combined suite has 68 passing tests and 32 Chromium desktop/mobile checks; lint, TypeScript and peer checks pass. The optimized build passed.
 - Task 08: optional customer access and private checkout continuity are implemented as a local email/password candidate. The combined suite has 80 passing tests and 42 Chromium desktop/mobile checks. Lint, TypeScript and the optimized build passed. The refreshed local account and checkout preview was inspected on desktop and mobile. Production login/recovery choices and actual email transport remain gated.
-- Tasks 09–29 remain pending. Private booking history and separately approved claims are next.
+- Task 09: private booking history, immutable customer-ID ownership, separately scoped guest view capabilities and a policy-gated historical-claim protocol are implemented. The full suite has 92 passing tests and 46 passing Chromium desktop/mobile checks. Lint, TypeScript, development migration and the optimized build passed. Existing owner data survived migration; concurrency and audit-failure rollback were proved. Customer history/detail screenshots were inspected in both themes. Production claim evidence/recovery remains unapproved and disabled.
+- Tasks 10–29 remain pending. Shared physical-room inventory and availability are next.
 
 ## Decision status
 
@@ -26,7 +27,7 @@ Native inline execution was chosen for this run. Shared types and transaction co
 
 Run `pnpm install`, `pnpm local:setup`, then `docker compose up -d database`. The setup command creates a protected local `.env` only when one does not exist. It never replaces existing settings. Database migrations, development seeding and the website startup are recorded here when verified. Local credentials are not stored in this document.
 
-No Maya/Brevo/media provider, deployment, production database or customer flow has been verified yet. The original implementation-plan verification record remains a historical document-only check.
+No Maya/Brevo/hosted-media provider, deployment, production database or hosted customer flow has been verified yet. The original implementation-plan verification record remains a historical document-only check.
 
 ## Database proof — November 14, 2026
 
@@ -36,7 +37,7 @@ Canonical amount strings preserve values beyond JavaScript safe integers; SQL re
 
 The pinned adapter retains a startup pool lease and its destroy method does not terminate the pool. The isolated test driver tracks public acquire/release events for fixture shutdown. Runtime pool size is eight, with capacity reserved for the startup connection. Supabase's hosted pooler and Vercel connection behavior remain unverified and require Task 27.
 
-Run `pnpm db:migrate` for the guarded local target, `pnpm test` for the current suite, `pnpm build` for the optimized build, and `pnpm dev` for the app on port 3042. The public page remains a foundation placeholder; the full website is not yet implemented.
+Run `pnpm db:migrate` for the guarded local target, `pnpm test` for the current suite, `pnpm build` for the optimized build, and `pnpm dev` for the app on port 3042. Task 02 originally exposed a foundation placeholder; Tasks 06–09 now provide the public pages and local customer-access/history flows. Booking checkout and external providers remain later work.
 
 ## Identity boundary — November 14, 2026
 
@@ -46,7 +47,7 @@ Payload's native first-register endpoint can create a first user despite ordinar
 
 Staff bootstrap is a separate local operator command: configure `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_NAME` and a strong `BOOTSTRAP_ADMIN_PASSWORD` in protected local settings, then run `pnpm staff:bootstrap`. The default operator email is codeboxstudios.official@gmail.com, but no real account was created by this implementation pass. The command only permits the dedicated local target, refuses existing staff and atomically saves the first developer account with its audit entry. It does not print credentials or permit hosted bootstrap.
 
-Email/password with verification is a local candidate, not a production-method selection. Production customer authentication remains disabled unless its method is explicitly configured after the decision. Customer registration/profile flows, approved historical claims and actual transactional email remain later tasks. An unconfigured email adapter now fails closed instead of printing private verification/reset links to console. Recovery is unavailable until a transport is configured.
+Email/password with verification is a local candidate, not a production-method selection. Production customer authentication remains disabled unless its method is explicitly configured after the decision. Task 08 added local registration and recovery candidates. Unrestricted profile writes, approved historical claims and actual transactional email remain gated or later work. An unconfigured email adapter now fails closed instead of printing private verification/reset links to console. Recovery is unavailable until a transport is configured.
 
 Current browser coverage uses Chromium on desktop and Pixel 7 emulation. Safari/WebKit and actual devices remain release/UAT checks. Recovery quarantine defaults to blocking protected routes; the complete restoration/reconciliation procedure remains Task 26.
 

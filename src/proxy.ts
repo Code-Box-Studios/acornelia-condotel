@@ -20,7 +20,7 @@ export function proxy(request:NextRequest){
   if(process.env.APP_OPERATION_MODE!=='normal')return refuse(503,'This service is temporarily unavailable')
   if(/^\/api\/(staff-users|customers)\/forgot-password$/.test(path)&&!process.env.EMAIL_TRANSPORT)return refuse(503,'Account recovery is temporarily unavailable')
   if(path==='/api/graphql')return refuse(403,'This service is unavailable')
-  if(process.env.APP_ENV==='production'&&process.env.CUSTOMER_AUTH_METHOD!=='email-password'&&(path.startsWith('/api/customers')||path.startsWith('/account')))return refuse(503,'Customer access is temporarily unavailable')
+  if(process.env.APP_ENV==='production'&&process.env.CUSTOMER_AUTH_METHOD!=='email-password'&&(path.startsWith('/api/customers')||path.startsWith('/api/customer/')||path.startsWith('/account')))return refuse(503,'Customer access is temporarily unavailable')
   const isMutation=!['GET','HEAD','OPTIONS'].includes(request.method)
   const externalWebhook=path==='/api/webhooks/maya'
   const authenticatedRunner=path==='/api/internal/work'

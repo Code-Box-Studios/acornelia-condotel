@@ -68,6 +68,8 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    'booking-claims': BookingClaim;
+    'booking-views': BookingView;
     'auth-tokens': AuthToken;
     'auth-deliveries': AuthDelivery;
     'auth-throttles': AuthThrottle;
@@ -93,6 +95,8 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    'booking-claims': BookingClaimsSelect<false> | BookingClaimsSelect<true>;
+    'booking-views': BookingViewsSelect<false> | BookingViewsSelect<true>;
     'auth-tokens': AuthTokensSelect<false> | AuthTokensSelect<true>;
     'auth-deliveries': AuthDeliveriesSelect<false> | AuthDeliveriesSelect<true>;
     'auth-throttles': AuthThrottlesSelect<false> | AuthThrottlesSelect<true>;
@@ -178,17 +182,65 @@ export interface CustomerAuthOperations {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "auth-tokens".
+ * via the `definition` "booking-claims".
  */
-export interface AuthToken {
+export interface BookingClaim {
   id: string;
+  booking: string | Booking;
+  customer: string | Customer;
+  reviewer: string | StaffUser;
+  purpose: 'booking-claim';
   tokenHash: string;
-  purpose: 'verify' | 'reset';
-  account: string | Customer;
-  emailHash: string;
+  proof:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  policyId: string;
+  policyRevision: number;
   securityRevision: number;
   expiresAt: string;
   usedAt?: string | null;
+  revokedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookings".
+ */
+export interface Booking {
+  id: string;
+  code?: string | null;
+  ownerCustomer?: (string | null) | Customer;
+  status: 'held' | 'confirmed' | 'cancelled' | 'completed' | 'expired';
+  revision: number;
+  arrival: string;
+  departure: string;
+  acceptedQuote:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  contact:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  stayingGuest?: string | null;
+  source: 'website' | 'phone' | 'walk-in';
   updatedAt: string;
   createdAt: string;
 }
@@ -222,6 +274,64 @@ export interface Customer {
     | null;
   password?: string | null;
   collection: 'customers';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "staff-users".
+ */
+export interface StaffUser {
+  id: string;
+  deactivated?: boolean | null;
+  name: string;
+  role: 'staff' | 'developer';
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'staff-users';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "booking-views".
+ */
+export interface BookingView {
+  id: string;
+  booking: string | Booking;
+  tokenHash: string;
+  expiresAt: string;
+  revokedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "auth-tokens".
+ */
+export interface AuthToken {
+  id: string;
+  tokenHash: string;
+  purpose: 'verify' | 'reset';
+  account: string | Customer;
+  emailHash: string;
+  securityRevision: number;
+  expiresAt: string;
+  usedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -394,76 +504,12 @@ export interface RoomType {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "staff-users".
- */
-export interface StaffUser {
-  id: string;
-  deactivated?: boolean | null;
-  name: string;
-  role: 'staff' | 'developer';
-  updatedAt: string;
-  createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  resetPasswordRequestedAt?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
-  password?: string | null;
-  collection: 'staff-users';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "rooms".
  */
 export interface Room {
   id: string;
   label: string;
   onSale?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "bookings".
- */
-export interface Booking {
-  id: string;
-  code?: string | null;
-  ownerCustomerId?: string | null;
-  status: 'held' | 'confirmed' | 'cancelled' | 'completed' | 'expired';
-  revision: number;
-  arrival: string;
-  departure: string;
-  acceptedQuote:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  contact:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  stayingGuest?: string | null;
-  source: 'website' | 'phone' | 'walk-in';
   updatedAt: string;
   createdAt: string;
 }
@@ -627,6 +673,14 @@ export interface PayloadLockedDocument {
   id: string;
   document?:
     | ({
+        relationTo: 'booking-claims';
+        value: string | BookingClaim;
+      } | null)
+    | ({
+        relationTo: 'booking-views';
+        value: string | BookingView;
+      } | null)
+    | ({
         relationTo: 'auth-tokens';
         value: string | AuthToken;
       } | null)
@@ -749,6 +803,38 @@ export interface PayloadMigration {
   batch?: number | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "booking-claims_select".
+ */
+export interface BookingClaimsSelect<T extends boolean = true> {
+  booking?: T;
+  customer?: T;
+  reviewer?: T;
+  purpose?: T;
+  tokenHash?: T;
+  proof?: T;
+  policyId?: T;
+  policyRevision?: T;
+  securityRevision?: T;
+  expiresAt?: T;
+  usedAt?: T;
+  revokedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "booking-views_select".
+ */
+export interface BookingViewsSelect<T extends boolean = true> {
+  booking?: T;
+  tokenHash?: T;
+  expiresAt?: T;
+  revokedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -975,7 +1061,7 @@ export interface RoomsSelect<T extends boolean = true> {
  */
 export interface BookingsSelect<T extends boolean = true> {
   code?: T;
-  ownerCustomerId?: T;
+  ownerCustomer?: T;
   status?: T;
   revision?: T;
   arrival?: T;

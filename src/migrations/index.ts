@@ -9,6 +9,7 @@ import * as migration_20261114_051441_posts_enquiries from './20261114_051441_po
 import * as migration_20261114_052943_editorial_fixture_guard from './20261114_052943_editorial_fixture_guard';
 import * as migration_20261114_054413_checkout_drafts from './20261114_054413_checkout_drafts';
 import * as migration_20261114_055830_customer_auth_capabilities from './20261114_055830_customer_auth_capabilities';
+import * as migration_20261115_182340_customer_history_claims from './20261115_182340_customer_history_claims';
 
 export const migrations = [
   {
@@ -64,6 +65,11 @@ export const migrations = [
   {
     up: migration_20261114_055830_customer_auth_capabilities.up,
     down: migration_20261114_055830_customer_auth_capabilities.down,
-    name: '20261114_055830_customer_auth_capabilities'
+    name: '20261114_055830_customer_auth_capabilities',
+  },
+  {
+    up: migration_20261115_182340_customer_history_claims.up,
+    down: migration_20261115_182340_customer_history_claims.down,
+    name: '20261115_182340_customer_history_claims'
   },
 ];
