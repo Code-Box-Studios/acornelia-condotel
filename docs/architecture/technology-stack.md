@@ -174,3 +174,8 @@ Account offers now use immutable Payload versions, server-only quote evaluation 
 ### Durable queue implementation — November 15, 2026
 
 Task 13 implements application-owned PostgreSQL outbox records and generation-fenced leases, using the existing Payload transaction boundary. The choice keeps booking intent atomic with its business writes and supports explicit uncertainty/reconciliation rules. Payload `autoRun` is not used. The external scheduler, cadence, operator, alert thresholds and subscription remain Decision 10. No new provider or service charge was selected. See the [scheduled-work implementation and limits](../operations/deployment.md#scheduled-work-and-payment-recovery). Actual Maya/mail handlers and hosted execution require subsequent verification.
+
+
+### Maya transport implementation — November 15, 2026
+
+Task 15 uses a narrow server-side HTTP adapter over native fetch for one-time Checkout, verified payment retrieval and capability-gated void/refund calls. A small owned boundary makes exact money serialization, response validation, key/environment/host restrictions and unknown-outcome handling explicit. It introduces no provider, paid subscription or third-party payment SDK dependency. The existing Maya selection is unchanged. Current official documentation and the official Maya WooCommerce plugin were checked; [source contracts, local tests and remaining merchant gates](2026-11-15-maya-contract.md) are recorded separately. No real merchant capability, live credential, gateway expiry, refund delivery or sandbox connection was verified.
