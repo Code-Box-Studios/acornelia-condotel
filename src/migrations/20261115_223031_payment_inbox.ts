@@ -7,26 +7,26 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   CREATE TYPE "public"."enum_payment_inbox_state" AS ENUM('pending', 'processed', 'exception');
   ALTER TYPE "public"."enum_work_items_kind" ADD VALUE 'payment-observation' BEFORE 'reconcile-payment';
   CREATE TABLE "payment_inbox" (
-  	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-  	"semantic_key" varchar NOT NULL,
-  	"delivery_key" varchar NOT NULL,
-  	"provider_payment_id" varchar NOT NULL,
-  	"merchant_reference" varchar,
-  	"environment" "enum_payment_inbox_environment" NOT NULL,
-  	"amount_minor" varchar NOT NULL,
-  	"currency" varchar NOT NULL,
-  	"provider_status" varchar NOT NULL,
-  	"method" varchar,
-  	"provider_paid_at" timestamp(3) with time zone,
-  	"received_at" timestamp(3) with time zone NOT NULL,
-  	"source" "enum_payment_inbox_source" DEFAULT 'webhook' NOT NULL,
-  	"state" "enum_payment_inbox_state" DEFAULT 'pending' NOT NULL,
-  	"processed_at" timestamp(3) with time zone,
-  	"reason_code" varchar,
-  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+    "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    "semantic_key" varchar NOT NULL,
+    "delivery_key" varchar NOT NULL,
+    "provider_payment_id" varchar NOT NULL,
+    "merchant_reference" varchar,
+    "environment" "enum_payment_inbox_environment" NOT NULL,
+    "amount_minor" varchar NOT NULL,
+    "currency" varchar NOT NULL,
+    "provider_status" varchar NOT NULL,
+    "method" varchar,
+    "provider_paid_at" timestamp(3) with time zone,
+    "received_at" timestamp(3) with time zone NOT NULL,
+    "source" "enum_payment_inbox_source" DEFAULT 'webhook' NOT NULL,
+    "state" "enum_payment_inbox_state" DEFAULT 'pending' NOT NULL,
+    "processed_at" timestamp(3) with time zone,
+    "reason_code" varchar,
+    "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+    "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
-  
+
   ALTER TABLE "payload_locked_documents_rels" ADD COLUMN "payment_inbox_id" uuid;
   CREATE UNIQUE INDEX "payment_inbox_semantic_key_idx" ON "payment_inbox" USING btree ("semantic_key");
   CREATE INDEX "payment_inbox_provider_payment_id_idx" ON "payment_inbox" USING btree ("provider_payment_id");
@@ -53,7 +53,7 @@ export async function down({ db }: MigrateDownArgs): Promise<void> {
   ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT "payload_locked_documents_rels_payment_inbox_fk";
   ALTER TABLE "payment_inbox" DISABLE ROW LEVEL SECURITY;
   DROP TABLE "payment_inbox";
-  
+
   ALTER TABLE "work_items" ALTER COLUMN "kind" SET DATA TYPE text;
   DROP TYPE "public"."enum_work_items_kind";
   CREATE TYPE "public"."enum_work_items_kind" AS ENUM('create-checkout', 'reconcile-payment', 'reconcile-refund', 'expire-hold', 'email', 'refund', 'enquiry');
