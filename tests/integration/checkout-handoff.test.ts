@@ -1,4 +1,4 @@
-import {randomBytes} from 'node:crypto'
+import {randomBytes,randomUUID} from 'node:crypto'
 import {afterAll,beforeAll,beforeEach,describe,expect,it} from 'vitest'
 import {createHarness,type TestHarness} from '../support/harness'
 import {saveCheckoutDraft,resumeCheckoutDraft,type CheckoutDraft} from '@/features/booking/draft'
@@ -47,5 +47,13 @@ describe('private checkout and account handoff',()=>{
     await expect(saveCheckoutDraft(saved,{...access,ref,expectedVersion:ref.version})).rejects.toThrow('changed in another tab')
     await expect(saveCheckoutDraft({...saved,totalMinor:'1'} as CheckoutDraft,session())).rejects.toThrow()
     await expect(saveCheckoutDraft({...saved,paymentAttemptId:'not-owned'} as CheckoutDraft,session())).rejects.toThrow()
+  })
+  it('keeps one server-minted preparation key across revisions and resumed tabs',async()=>{
+    const access=session(),first=await saveCheckoutDraft(saved,access)
+    expect(first.commandKey).toMatch(/^[a-f0-9-]{36}$/)
+    const next=await saveCheckoutDraft(saved,{...access,ref:first,expectedVersion:first.version})
+    expect(next.commandKey).toBe(first.commandKey)
+    expect((await h.rows('checkout-drafts'))[0].commandKey).toBe(first.commandKey)
+    await expect(h.pool.query('UPDATE checkout_drafts SET command_key=$1 WHERE id=$2',[randomUUID(),first.id])).rejects.toMatchObject({code:'23514'})
   })
 })

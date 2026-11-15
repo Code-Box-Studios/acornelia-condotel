@@ -1,8 +1,8 @@
 import {NextResponse,type NextRequest} from 'next/server'
 import {recordGatewayRefusal} from '@/domain/audit/events'
-function privateResponse(response:NextResponse):NextResponse{
+function privateResponse(response:NextResponse,referrerPolicy='no-referrer'):NextResponse{
   response.headers.set('Cache-Control','private, no-store, max-age=0')
-  response.headers.set('Referrer-Policy','no-referrer')
+  response.headers.set('Referrer-Policy',referrerPolicy)
   response.headers.set('Vary','Cookie, Authorization')
   return response
 }
@@ -28,6 +28,8 @@ export function proxy(request:NextRequest){
     const origin=request.headers.get('origin')
     if(!process.env.APP_URL||origin!==new URL(process.env.APP_URL).origin)return refuse(403,'Request origin is not allowed','origin')
   }
-  return privateResponse(NextResponse.next())
+  // Same-origin form navigation needs a non-null Origin for the CSRF check.
+  // No referrer is sent to external payment destinations; handoff also sets no-referrer.
+  return privateResponse(NextResponse.next(),path==='/book/payment'?'same-origin':'no-referrer')
 }
 export const config={matcher:['/api/:path*','/admin/:path*','/account/:path*','/booking/:path*','/book/:path*','/updates/preview/:path*']}

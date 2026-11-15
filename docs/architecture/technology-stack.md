@@ -1,5 +1,7 @@
 # Technology stack and provider decisions
 
+Task 16 implementation update, November 15, 2026: Payload customer identity now supports private guest/account checkout review, immutable draft command keys, quote/offer review and frozen booking terms. Maya Checkout remains the selected payment boundary. Its creation handler is registered only when server environment, keys, approved merchant capabilities/methods and worker timing pass validation. No live merchant configuration or production approval was verified. Status capabilities use per-booking HttpOnly cookies with independent fixed expiry and browser/customer binding. No new paid service was introduced. Guest checkout remains available.
+
 **Updated:** November 12, 2026 (Payload selected for optional guest accounts; other provider selections retained). Full infrastructure pricing comparison dated November 5; limited entry-price rechecks recorded below.
 
 **Architecture review:** November 9, 2026. Core provider entry-price/allowance spot-checks remain consistent with the dated figures below; alternative-provider prices and the PHP exchange basis were not refreshed. See the [legal and technical audit](../proposal/2026-11-09-legal-technical-audit.md).  

@@ -4,6 +4,8 @@ export function readQuoteBrowser(request:Request,create=false):string|undefined{
   const value=request.headers.get('cookie')?.split(';').map(part=>part.trim()).find(part=>part.startsWith(cookieName+'='))?.slice(cookieName.length+1)
   return value&&/^[A-Za-z0-9_-]{43}$/.test(value)?value:create?opaqueSecret():undefined
 }
-function serialize(value:string,maxAge:number){return `${cookieName}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${process.env.APP_ENV==='production'?'; Secure':''}`}
-export function setQuoteBrowser(headers:Headers,key:string):void{headers.append('Set-Cookie',serialize(key,3600))}
+function serialize(value:string,maxAge:number){return `${cookieName}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${process.env.APP_ENV==='production'||process.env.APP_URL?.startsWith('https://')?'; Secure':''}`}
+// This opaque browser binding grants no private state alone. Individual grants keep their approved, fixed expiry.
+// A uniform upper-bound lifetime prevents a later response from shortening another active checkout's binding.
+export function setQuoteBrowser(headers:Headers,key:string):void{headers.append('Set-Cookie',serialize(key,86400))}
 export function clearQuoteBrowser(headers:Headers):void{headers.append('Set-Cookie',serialize('',0))}

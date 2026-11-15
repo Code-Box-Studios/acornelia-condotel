@@ -7,10 +7,11 @@ import {relationshipId,requireCustomer} from '@/features/customer/bookings'
 import {parseRuntimePolicy} from '@/domain/policy/parse'
 import {calculatePrice,rateRulesSchema} from './calculate'
 import type {QuoteSnapshot,AcceptedQuote} from './types'
+import {bookingTermsSnapshotSchema,quoteBookingTerms} from '@/domain/bookings/validation'
 export const quoteRequestSchema=z.object({stay:z.object({roomTypeId:z.uuid(),arrival:z.string(),departure:z.string(),occupancy:z.object({adults:z.number().int().min(1).max(100),children:z.number().int().min(0).max(100)}).strict()}).strict(),offerVersionId:z.uuid().optional()}).strict()
 export const pricingPolicySchema=z.object({currency:z.literal('PHP'),quoteMinutes:z.number().int().min(1).max(60),zeroTotal:z.enum(['unavailable','confirm-without-payment'])}).strict()
 const money=z.object({minor:z.string().regex(/^(0|[1-9]\d*)$/).max(60),currency:z.literal('PHP')}).strict()
-const snapshotSchema=z.object({version:z.number().int().positive(),stay:quoteRequestSchema.shape.stay,roomType:z.object({id:z.uuid(),name:z.string().max(200)}).strict(),policyVersionId:z.uuid(),policyRevision:z.number().int().positive(),rateVersionId:z.uuid(),offerVersionId:z.uuid().nullable(),issuedAt:z.iso.datetime(),expiresAt:z.iso.datetime(),synthetic:z.boolean(),components:z.array(z.object({kind:z.enum(['night','extra-adult','child','discount','fee','tax']),label:z.string().max(160),date:z.string().optional(),amount:money}).strict()).max(500),subtotal:money,discount:money,fees:money,taxes:money,total:money}).strict()
+const snapshotSchema=z.object({version:z.number().int().positive(),stay:quoteRequestSchema.shape.stay,roomType:z.object({id:z.uuid(),name:z.string().max(200)}).strict(),policyVersionId:z.uuid(),policyRevision:z.number().int().positive(),rateVersionId:z.uuid(),offerVersionId:z.uuid().nullable(),issuedAt:z.iso.datetime(),expiresAt:z.iso.datetime(),synthetic:z.boolean(),terms:bookingTermsSnapshotSchema.optional(),components:z.array(z.object({kind:z.enum(['night','extra-adult','child','discount','fee','tax']),label:z.string().max(160),date:z.string().optional(),amount:money}).strict()).max(500),subtotal:money,discount:money,fees:money,taxes:money,total:money}).strict()
 export async function quoteIdentity(tx:DbTx,ctx:CommandContext,row?:Quote){
   if(!ctx.browserKey||!/^[A-Za-z0-9_-]{43}$/.test(ctx.browserKey))throw new Error('Quote browser access required')
   if(ctx.actor.kind==='system'||ctx.actor.kind==='staff'&&ctx.actor.role!=='developer')throw new Error('Quote access denied')
@@ -27,6 +28,7 @@ export function acceptedQuote(row:Quote):AcceptedQuote{
   const snapshot=quoteSnapshot(row),policySnapshot=parseRuntimePolicy(row.policySnapshot,['stay','pricing']),rateSnapshot=rateRulesSchema.parse(row.rateSnapshot)
   const expected=calculatePrice(snapshot.stay,rateSnapshot,snapshot.discount)
   for(const field of ['components','subtotal','discount','fees','taxes','total'] as const)if(!isDeepStrictEqual(snapshot[field],expected[field]))throw new Error('Accepted quote failed calculation verification')
+  if(snapshot.terms&&!isDeepStrictEqual(snapshot.terms,quoteBookingTerms(policySnapshot)))throw new Error('Accepted booking terms mismatch')
   if(policySnapshot.id!==snapshot.policyVersionId||policySnapshot.revision!==snapshot.policyRevision)throw new Error('Accepted policy mismatch')
   return {...snapshot,acceptedAt:row.acceptedAt,policySnapshot,rateSnapshot}
 }

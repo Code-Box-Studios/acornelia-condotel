@@ -9,7 +9,7 @@ export async function POST(request:Request){
     const body=z.object({draft:z.unknown(),expectedVersion:z.number().int().min(1).optional()}).strict().parse(await readBoundedJson(request))
     if(body.expectedVersion===undefined)session.ref=undefined
     const ref=await saveCheckoutDraft(body.draft as CheckoutDraft,{...session,expectedVersion:body.expectedVersion})
-    const response=Response.json({version:ref.version},{headers:{'Cache-Control':'private, no-store'}})
+    const response=Response.json({version:ref.version,commandKey:ref.commandKey},{headers:{'Cache-Control':'private, no-store'}})
     setDraftCookies(response.headers,session,ref)
     return response
   }catch(error){

@@ -10,6 +10,12 @@ import {opaqueSecret} from '@/domain/security/private-state'
 import type {CheckoutAttempt,CreateCheckoutResult,MayaGateway} from '@/integrations/maya/types'
 import type {DbTx} from '@/domain/db/types'
 import type {Principal} from '@/domain/shared/types'
+import {policyFromRecord} from '@/domain/policy/current'
+import {quoteStay} from '@/domain/quotes/issue'
+import {acceptQuote} from '@/domain/quotes/accept'
+import {startCheckout} from '@/domain/bookings/start-checkout'
+import {randomUUID} from 'node:crypto'
+import {setCheckoutAccess} from '@/features/booking/status-http'
 const providerId='99999999-9999-4999-8999-999999999999'
 function fakeGateway(result:CreateCheckoutResult={kind:'created',environment:'sandbox',checkoutId:providerId,checkoutUrl:'https://payments-web-sandbox.paymaya.com/v2/checkout?id='+providerId}){
   const calls:CheckoutAttempt[]=[],unavailable=async()=>{throw new Error('Unexpected provider operation')}
@@ -118,5 +124,24 @@ describe('controlled checkout dispatch and private status',()=>{
     await expect(h.pool.query("UPDATE booking_views SET purpose='booking-view',browser_hash=NULL WHERE id=$1",[id])).rejects.toMatchObject({code:'23514'})
     for(let n=0;n<60;n++)await readCheckoutStatus(ctx,access.capability)
     await expect(readCheckoutStatus(ctx,access.capability)).rejects.toThrow('Wait before checking payment again')
+  })
+  it('does not shorten another active checkout browser credential when a later policy uses a shorter status lifetime',async()=>{
+    const fixture=await checkoutFixture(h)
+    await issueCheckoutAccess(fixture.ctx,fixture.receipt.bookingId)
+    const original=(await h.rows('rate-plans'))[0]
+    const next=await h.seed('policy-versions',{revision:2,active:false,approved:true,synthetic:true,approvalReference:'synthetic-shorter-status',approvedSections:fixture.policy.approvedSections,sections:{...fixture.ctx.policy.sections,checkoutStatus:{minutes:5,pollPerMinute:60}}})
+    await h.payload.update({collection:'policy-versions',id:fixture.policy.id,data:{active:false},overrideAccess:true})
+    const active=await h.payload.update({collection:'policy-versions',id:next.id,data:{active:true},overrideAccess:true})
+    await h.seed('rooms',{label:'PRIVATE-SECOND-STATUS-ROOM',roomType:fixture.type.id,onSale:true})
+    await h.seed('rate-plans',{roomType:fixture.type.id,policyVersion:next.id,revision:2,rules:original.rules,validFrom:original.validFrom,validUntil:original.validUntil,approved:true,synthetic:true,approvalReference:'synthetic-shorter-status-rate'})
+    const ctx={...fixture.ctx,policy:policyFromRecord(active)},quote=await quoteStay(ctx,{stay:fixture.quote.stay})
+    await acceptQuote(ctx,quote.id,quote.version)
+    const receipt=await startCheckout(ctx,{...fixture.input,commandKey:randomUUID(),quoteId:quote.id,version:quote.version})
+    expect(receipt.state).toBe('preparing');if(receipt.state==='rejected')throw new Error('Expected a prepared fixture')
+    const headers=new Headers();await setCheckoutAccess(headers,ctx,receipt.bookingId)
+    const cookies=headers.getSetCookie()
+    const browserAge=Number(/Max-Age=(\d+)/.exec(cookies.find(value=>value.startsWith('acornelia-quote-browser='))!)![1])
+    expect(browserAge).toBeGreaterThanOrEqual(7200);expect(browserAge).toBeLessThanOrEqual(86400)
+    expect(cookies.find(value=>value.startsWith('acornelia-payment-status-'))).toContain('Max-Age=300')
   })
 })

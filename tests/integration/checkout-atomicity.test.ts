@@ -18,7 +18,7 @@ describe('atomic checkout preparation',()=>{
   afterEach(()=>{vi.unstubAllEnvs();vi.restoreAllMocks()})
   afterAll(async()=>{await h?.close()})
   async function setup(options:{offer?:boolean;zero?:boolean;rooms?:number}={}){
-    const policy=await h.seed('policy-versions',{revision:1,active:true,approved:true,synthetic:true,approvalReference:'synthetic-checkout-review',approvedSections:['stay','pricing','offers','checkout'],sections:{stay:{timezone:'Asia/Manila',minNights:1,maxNights:30,minLeadDays:0,maxAdvanceDays:730,sameDayCutoff:'18:00',turnover:'same-day'},pricing:{currency:'PHP',quoteMinutes:15,zeroTotal:options.zero?'confirm-without-payment':'unavailable'},offers:{enabled:true,accountScope:'all-customers',discountOrder:'before-fees-and-tax'},checkout:{payment:'full',holdMinutes:15,thirdPartyBookings:true}}})
+    const policy=await h.seed('policy-versions',{revision:1,active:true,approved:true,synthetic:true,approvalReference:'synthetic-checkout-review',approvedSections:['stay','pricing','offers','checkout','bookingTerms','checkoutStatus'],sections:{stay:{timezone:'Asia/Manila',minNights:1,maxNights:30,minLeadDays:0,maxAdvanceDays:730,sameDayCutoff:'18:00',turnover:'same-day'},pricing:{currency:'PHP',quoteMinutes:15,zeroTotal:options.zero?'confirm-without-payment':'unavailable'},offers:{enabled:true,accountScope:'all-customers',discountOrder:'before-fees-and-tax'},checkout:{payment:'full',holdMinutes:15,thirdPartyBookings:true},bookingTerms:{title:'Synthetic booking terms',text:'Local testing policy only. Full payment confirms the accepted stay.'},checkoutStatus:{minutes:120,pollPerMinute:60}}})
     const type=await h.seed('room-types',{name:'Checkout room fixture',slug:'checkout-room',maxGuests:2,onSale:true,_status:'published'})
     for(let n=0;n<(options.rooms??1);n++)await h.seed('rooms',{label:'PRIVATE-CHECKOUT-'+n,roomType:type.id,onSale:true})
     await h.seed('rate-plans',{roomType:type.id,policyVersion:policy.id,revision:1,rules:{...rules,nightMinor:options.zero&&!options.offer?'0':'10000'},validFrom:'2026-11-15T00:00:00Z',validUntil:'2028-12-31T00:00:00Z',approved:true,synthetic:true,approvalReference:'synthetic-checkout-rate'})
@@ -46,6 +46,16 @@ describe('atomic checkout preparation',()=>{
     for(const name of ['bookings','allocations','offer-allocations','payment-attempts','work-items'] as const)expect(await h.rows(name)).toHaveLength(0)
     expect((await h.rows('quotes'))[0].consumedByBooking).toBeNull()
     expect(await h.rows('audit-entries')).toHaveLength(logs.length);expect(providerCreateCalls).toBe(0)
+  })
+  it('freezes the exact reviewed booking terms in the accepted quote',async()=>{
+    const {ctx,accepted}=await setup(),input=await accepted(),quote=await acceptQuote(ctx,input.quoteId,input.version)
+    expect(quote.terms).toMatchObject({title:'Synthetic booking terms',text:'Local testing policy only. Full payment confirms the accepted stay.',payment:'full',holdMinutes:15,thirdPartyBookings:true,timezone:'Asia/Manila'})
+    await expect(h.pool.query("UPDATE quotes SET snapshot=jsonb_set(snapshot,'{terms,text}','\"Changed terms\"') WHERE id=$1",[quote.id])).rejects.toMatchObject({code:'23514'})
+  })
+  it('requires a contact phone before final preparation',async()=>{
+    const {ctx,accepted}=await setup(),input=await accepted(),missing={...input,contact:{name:input.contact.name,email:input.contact.email}} as CheckoutInput
+    expect(await startCheckout(ctx,missing)).toEqual({state:'rejected',code:'invalid-input'})
+    expect(await h.rows('bookings')).toHaveLength(0)
   })
   it('commits immutable amount, owner, room, offer, reference and work in one preparation',async()=>{
     const {ctx,accepted,customer}=await setup({offer:true}),result=await startCheckout(ctx,await accepted())

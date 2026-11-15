@@ -2,7 +2,7 @@ import {randomBytes} from 'node:crypto'
 import type {CommandContext,DbTx} from '@/domain/db/types'
 import type {Booking} from '@/payload-types'
 import type {CheckoutInput,CheckoutResult} from './types'
-import {checkoutInputSchema,checkoutPolicySchema,CheckoutRefused,sqlError} from './validation'
+import {checkoutInputSchema,checkoutPolicySchema,checkoutStatusPolicySchema,CheckoutRefused,sqlError} from './validation'
 import {parseEnvironment} from '@/config/env'
 import {acceptedQuote,pricingPolicySchema,quoteIdentity} from '@/domain/quotes/validation'
 import {requireCurrentPolicy} from '@/domain/policy/current'
@@ -56,9 +56,11 @@ export async function startCheckout(ctx:CommandContext,input:CheckoutInput):Prom
         const saved=acceptedQuote(quote)
         let terms
         try{
-          const current=await requireCurrentPolicy(tx,ctx,['stay','pricing','checkout',...(saved.offerVersionId?['offers']:[])])
+          const current=await requireCurrentPolicy(tx,ctx,['stay','pricing','checkout','bookingTerms','checkoutStatus',...(saved.offerVersionId?['offers']:[])])
           if(current.id!==saved.policyVersionId||current.revision!==saved.policyRevision)throw new Error('Policy changed')
           terms=checkoutPolicySchema.parse(current.sections.checkout)
+          checkoutStatusPolicySchema.parse(current.sections.checkoutStatus)
+          if(!saved.terms)throw new Error('Review the approved booking terms before checkout')
         }catch{throw new CheckoutRefused('configuration-unavailable')}
         const stayingGuest=value.stayingGuest??value.contact.name
         if(!terms.thirdPartyBookings&&(stayingGuest.toLowerCase()!==value.contact.name.toLowerCase()||ctx.actor.kind==='customer'&&tx.req.user?.email.toLowerCase()!==value.contact.email))throw new CheckoutRefused('contact-not-allowed')
