@@ -84,7 +84,7 @@ async function projection(tx:DbTx,ctx:CommandContext,booking:Booking):Promise<{s
   if(['cancelled','expired','completed'].includes(booking.status))state='closed'
   else if(booking.status==='confirmed'){
     const zero=total.minor==='0'&&pricingPolicySchema.parse(quote.policySnapshot.sections.pricing).zeroTotal==='confirm-without-payment'
-    const money=zero?null:await tx.payload.find({collection:'payment-transactions',where:{and:[{booking:{equals:booking.id}},{status:{equals:'collected'}},{amountMinor:{equals:total.minor}},{currency:{equals:total.currency}}]},limit:1,depth:0,req:tx.req,overrideAccess:false})
+    const money=zero?null:await tx.payload.find({collection:'payment-transactions',where:{and:[{booking:{equals:booking.id}},{status:{equals:'collected'}},{appliedRevision:{equals:booking.revision}},{amountMinor:{equals:total.minor}},{currency:{equals:total.currency}}]},limit:1,depth:0,req:tx.req,overrideAccess:false})
     if(zero||money?.docs.length)state='confirmed'
   }else if(attempt?.state==='closed')state='closed'
   else if(attempt&&Date.parse(attempt.deadline)>Date.parse(ctx.clock.now())){

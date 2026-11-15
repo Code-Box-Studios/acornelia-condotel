@@ -1,7 +1,7 @@
 import type {CommandContext,DbTx} from '@/domain/db/types'
 export const workKinds=['create-checkout','payment-observation','reconcile-payment','reconcile-refund','expire-hold','email','refund','enquiry'] as const
 export type WorkKind=typeof workKinds[number]
-export type WorkPayload={inboxId:string}|{attemptId:string}|{bookingId:string}|{refundId:string}|{enquiryId:string}|{category:'auth';messageId:string}|{category:'booking';bookingId:string;revision:number}|{category:'staff';messageId:string}
+export type WorkPayload={inboxId:string}|{attemptId:string}|{bookingId:string}|{refundId:string}|{enquiryId:string}|{category:'auth';messageId:string}|{category:'booking';bookingId:string;revision:number}|{category:'staff';messageId:string}|{category:'payment-issue';issueId:string}
 export type WorkIntent={semanticKey:string;kind:WorkKind;payload:WorkPayload;availableAt:string}
 export type WorkLease={id:string;kind:WorkKind;payload:WorkPayload;generation:number;owner:string;expiresAt:string;attempts:number}
 export type WorkReason='retryable'|'timeout'|'provider-unavailable'|'transport-unconfigured'|'invalid-work'|'unexpected'|'lease-expired-after-dispatch'|'attempts-exhausted'

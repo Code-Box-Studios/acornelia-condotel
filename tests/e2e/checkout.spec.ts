@@ -9,6 +9,8 @@ import {dispatchCheckout} from '@/domain/payments/create-checkout'
 import type {MayaGateway} from '@/integrations/maya/types'
 import {publishOffer} from '@/domain/offers/publication'
 import {syntheticOfferTerms} from '../support/offer-fixtures'
+import {signedObservation} from '../support/payment-observation'
+import {applyPaymentObservation} from '@/domain/payments/observe'
 import {mkdir} from 'node:fs/promises'
 let h:TestHarness
 const origin='http://127.0.0.1:3043'
@@ -234,4 +236,23 @@ test('reprices a chosen account offer and keeps account, contact and staying gue
   expect(created.stayingGuest).toBe('Staying guest fixture')
   expect((await h.rows('offer-allocations'))[0].state).toBe('consumed')
   expect(await h.rows('payment-attempts')).toHaveLength(1)
+})
+
+test('shows paid confirmation only after the original verified collection is applied',async({page,playwright})=>{
+  h.clock.set(new Date().toISOString())
+  const fixture=await checkoutFixture(h)
+  const attempt=(await h.rows('payment-attempts'))[0]
+  await page.context().addCookies([{name:'acornelia-quote-browser',value:fixture.ctx.browserKey!,url:origin,httpOnly:true,sameSite:'Lax'}])
+  expect((await page.request.post('/api/booking/checkout',{headers:{origin},data:fixture.input})).ok()).toBe(true)
+  await page.goto('/book/payment?bookingId='+fixture.receipt.bookingId+'&outcome=success')
+  await expect(page.getByRole('heading',{name:'Checking payment.'})).toBeVisible()
+  const ctx={...fixture.worker,actor:{kind:'system' as const,purpose:'payments' as const}}
+  await applyPaymentObservation(ctx,await signedObservation(ctx,{id:randomUUID(),requestReferenceNumber:attempt.merchantReference,status:'PAYMENT_SUCCESS',amount:'200.00',currency:'PHP'}))
+  await expect(page.getByRole('button',{name:'Check again',exact:true})).toBeEnabled()
+  await page.getByRole('button',{name:'Check again',exact:true}).click()
+  await expect(page.getByRole('heading',{name:'Your stay is confirmed.'})).toBeVisible()
+  await expect(page.getByTestId('payment-total')).toHaveText('₱200.00')
+  expect((await h.rows('payment-transactions'))[0].appliedRevision).toBe(1)
+  const outsider=await playwright.request.newContext({baseURL:origin})
+  try{expect((await outsider.get('/api/booking/status?bookingId='+fixture.receipt.bookingId)).status()).toBe(401)}finally{await outsider.dispose()}
 })

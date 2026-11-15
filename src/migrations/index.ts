@@ -17,6 +17,7 @@ import * as migration_20261115_203440_durable_work from './20261115_203440_durab
 import * as migration_20261115_204353_atomic_checkout from './20261115_204353_atomic_checkout';
 import * as migration_20261115_212448_checkout_status_dispatch from './20261115_212448_checkout_status_dispatch';
 import * as migration_20261115_223031_payment_inbox from './20261115_223031_payment_inbox';
+import * as migration_20261115_224545_canonical_payments from './20261115_224545_canonical_payments';
 
 export const migrations = [
   {
@@ -112,6 +113,11 @@ export const migrations = [
   {
     up: migration_20261115_223031_payment_inbox.up,
     down: migration_20261115_223031_payment_inbox.down,
-    name: '20261115_223031_payment_inbox'
+    name: '20261115_223031_payment_inbox',
+  },
+  {
+    up: migration_20261115_224545_canonical_payments.up,
+    down: migration_20261115_224545_canonical_payments.down,
+    name: '20261115_224545_canonical_payments'
   },
 ];

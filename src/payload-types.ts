@@ -93,6 +93,7 @@ export interface Config {
     'payment-attempts': PaymentAttempt;
     'payment-transactions': PaymentTransaction;
     'payment-inbox': PaymentInbox;
+    'payment-issues': PaymentIssue;
     'audit-entries': AuditEntry;
     'work-items': WorkItem;
     'payload-kv': PayloadKv;
@@ -127,6 +128,7 @@ export interface Config {
     'payment-attempts': PaymentAttemptsSelect<false> | PaymentAttemptsSelect<true>;
     'payment-transactions': PaymentTransactionsSelect<false> | PaymentTransactionsSelect<true>;
     'payment-inbox': PaymentInboxSelect<false> | PaymentInboxSelect<true>;
+    'payment-issues': PaymentIssuesSelect<false> | PaymentIssuesSelect<true>;
     'audit-entries': AuditEntriesSelect<false> | AuditEntriesSelect<true>;
     'work-items': WorkItemsSelect<false> | WorkItemsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -781,12 +783,16 @@ export interface PaymentAttempt {
 export interface PaymentTransaction {
   id: string;
   providerPaymentId: string;
-  merchantReference: string;
+  merchantReference?: string | null;
   booking?: (string | null) | Booking;
   attempt?: (string | null) | PaymentAttempt;
   environment: 'sandbox' | 'production' | 'offline';
   amountMinor: string;
   currency: string;
+  appliedRevision?: number | null;
+  collectedAt?: string | null;
+  lastObservedAt?: string | null;
+  providerStatus?: string | null;
   status: 'pending' | 'authorized' | 'collected' | 'failed' | 'voided';
   updatedAt: string;
   createdAt: string;
@@ -812,6 +818,26 @@ export interface PaymentInbox {
   state: 'pending' | 'processed' | 'exception';
   processedAt?: string | null;
   reasonCode?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-issues".
+ */
+export interface PaymentIssue {
+  id: string;
+  issueKey: string;
+  reasonCode: string;
+  booking?: (string | null) | Booking;
+  attempt?: (string | null) | PaymentAttempt;
+  payment?: (string | null) | PaymentTransaction;
+  inbox?: (string | null) | PaymentInbox;
+  observedAmountMinor?: string | null;
+  observedCurrency?: string | null;
+  state: 'open' | 'resolved';
+  resolvedAt?: string | null;
+  resolutionCode?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1006,6 +1032,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'payment-inbox';
         value: string | PaymentInbox;
+      } | null)
+    | ({
+        relationTo: 'payment-issues';
+        value: string | PaymentIssue;
       } | null)
     | ({
         relationTo: 'audit-entries';
@@ -1514,6 +1544,10 @@ export interface PaymentTransactionsSelect<T extends boolean = true> {
   environment?: T;
   amountMinor?: T;
   currency?: T;
+  appliedRevision?: T;
+  collectedAt?: T;
+  lastObservedAt?: T;
+  providerStatus?: T;
   status?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1538,6 +1572,25 @@ export interface PaymentInboxSelect<T extends boolean = true> {
   state?: T;
   processedAt?: T;
   reasonCode?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-issues_select".
+ */
+export interface PaymentIssuesSelect<T extends boolean = true> {
+  issueKey?: T;
+  reasonCode?: T;
+  booking?: T;
+  attempt?: T;
+  payment?: T;
+  inbox?: T;
+  observedAmountMinor?: T;
+  observedCurrency?: T;
+  state?: T;
+  resolvedAt?: T;
+  resolutionCode?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -12,6 +12,7 @@ const email=z.discriminatedUnion('category',[
   z.object({category:z.literal('auth'),messageId:id}).strict(),
   z.object({category:z.literal('booking'),bookingId:id,revision:z.number().int().positive()}).strict(),
   z.object({category:z.literal('staff'),messageId:id}).strict(),
+  z.object({category:z.literal('payment-issue'),issueId:id}).strict(),
 ])
 export const workPolicySchema=z.object({leaseSeconds:z.number().int().min(5).max(300),maxAttempts:z.number().int().min(1).max(20),maxBatch:z.number().int().min(1).max(100),backoffSeconds:z.array(z.number().int().min(1).max(86400)).min(1).max(20),runSeconds:z.number().int().min(1).max(240)}).strict()
 export function payloadFor(kind:WorkKind,input:unknown):WorkPayload{

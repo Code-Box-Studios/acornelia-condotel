@@ -3,6 +3,7 @@ import type {WorkLease,WorkResult} from '@/domain/work/types'
 import type {MayaGateway} from '@/integrations/maya/types'
 import {isDeepStrictEqual} from 'node:util'
 import {z} from 'zod'
+import {parseEnvironment} from '@/config/env'
 import {assertWorker,fencedRow,workPolicy} from '@/domain/work/validation'
 import {requireCurrentPolicy} from '@/domain/policy/current'
 import {acceptedQuote} from '@/domain/quotes/validation'
@@ -34,6 +35,18 @@ export async function dispatchCheckout(ctx:CommandContext,lease:WorkLease,gatewa
     await appendAudit(tx,{action:'checkout:dispatch-owned',recordType:'payment-attempts',recordId:attempt.id,outcome:'unknown'})
     return {attempt:{id:attempt.id,bookingId,merchantReference:attempt.merchantReference,amount:{minor:attempt.amountMinor,currency:attempt.currency},revision:attempt.revision,deadline:attempt.deadline,synthetic:quote.synthetic},environment}
   })
+  assertWorker(ctx)
+  if(signal?.aborted||Date.parse(lease.expiresAt)<=Date.parse(ctx.clock.now())||Date.parse(prepared.attempt.deadline)<=Date.parse(ctx.clock.now()))throw new Error('Checkout dispatch deadline passed')
+  if(prepared.environment!==parseEnvironment(process.env).mayaEnvironment)throw new Error('Checkout environment changed')
+  const stillOwned=await ctx.uow.run(ctx.actor,async tx=>{
+    await fencedRow(tx,lease,ctx.clock.now())
+    const attempt=await tx.payload.findByID({collection:'payment-attempts',id:prepared.attempt.id,depth:0,req:tx.req,overrideAccess:false})
+    const booking=await tx.payload.findByID({collection:'bookings',id:prepared.attempt.bookingId,depth:0,req:tx.req,overrideAccess:false})
+    const observations=await tx.payload.count({collection:'payment-transactions',where:{attempt:{equals:attempt.id}},req:tx.req,overrideAccess:false})
+    const evidence=await tx.payload.count({collection:'payment-inbox',where:{and:[{merchantReference:{equals:attempt.merchantReference}},{environment:{equals:prepared.environment}},{source:{equals:'retrieval'}}]},req:tx.req,overrideAccess:false})
+    return attempt.state==='unknown'&&booking.status==='held'&&!observations.totalDocs&&!evidence.totalDocs
+  })
+  if(!stillOwned)return {state:'done'}
   assertWorker(ctx)
   if(signal?.aborted||Date.parse(lease.expiresAt)<=Date.parse(ctx.clock.now())||Date.parse(prepared.attempt.deadline)<=Date.parse(ctx.clock.now()))throw new Error('Checkout dispatch deadline passed')
   let result:CreateCheckoutResult

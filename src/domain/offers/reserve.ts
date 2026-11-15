@@ -35,7 +35,7 @@ export async function reserveOffer(tx:DbTx,input:AcceptedQuote,now:string):Promi
 }
 export async function consumeOffer(tx:DbTx,id:string,now=new Date().toISOString()):Promise<void>{
   const allocation=await tx.payload.findByID({collection:'offer-allocations',id,depth:0,req:tx.req,overrideAccess:false})
-  if(tx.actor.kind==='anonymous'||tx.actor.kind==='system'&&!['payments','recovery'].includes(tx.actor.purpose)||tx.actor.kind==='staff'&&tx.actor.role!=='developer')throw new OfferUnavailable('account-required')
+  if(tx.actor.kind==='anonymous'||tx.actor.kind==='system'&&!['payments','work','recovery'].includes(tx.actor.purpose)||tx.actor.kind==='staff'&&tx.actor.role!=='developer')throw new OfferUnavailable('account-required')
   if(tx.actor.kind==='customer'&&relationshipId(allocation.customer)!==tx.actor.id)throw new OfferUnavailable('account-required')
   if(allocation.state==='consumed')return
   if(allocation.state==='released')throw new OfferUnavailable('reissue-required')

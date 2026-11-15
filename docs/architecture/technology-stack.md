@@ -1,5 +1,7 @@
 # Technology stack and provider decisions
 
+Task 18 implementation update, November 16, 2026: a valid Maya platform signature stores evidence but cannot credit a booking by itself. Payment application additionally requires an authenticated read through the configured merchant secret key. This adds a verification read, not another payment provider or automatic charge. Actual payment records are separate from attempts and remain unique by environment/provider payment ID; one applied booking revision prevents duplicate fulfillment. Extra/incompatible collections become operator issues. No live merchant account, payment or refund was verified.
+
 Task 16 implementation update, November 15, 2026: Payload customer identity now supports private guest/account checkout review, immutable draft command keys, quote/offer review and frozen booking terms. Maya Checkout remains the selected payment boundary. Its creation handler is registered only when server environment, keys, approved merchant capabilities/methods and worker timing pass validation. No live merchant configuration or production approval was verified. Status capabilities use per-booking HttpOnly cookies with independent fixed expiry and browser/customer binding. No new paid service was introduced. Guest checkout remains available.
 
 **Updated:** November 12, 2026 (Payload selected for optional guest accounts; other provider selections retained). Full infrastructure pricing comparison dated November 5; limited entry-price rechecks recorded below.
