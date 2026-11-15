@@ -3,6 +3,7 @@ import {randomUUID} from 'node:crypto'
 import {createHarness,type TestHarness} from '../support/harness'
 import type {Principal} from '@/domain/shared/types'
 import type {MigrateUpArgs,MigrateDownArgs} from '@payloadcms/db-postgres'
+import {syntheticOfferTerms} from '../support/offer-fixtures'
 import type {DbTx} from '@/domain/db/types'
 const actor:Principal={kind:'system',purpose:'payments'}
 const stay={arrival:'2026-11-20T00:00:00.000Z',departure:'2026-11-22T00:00:00.000Z'}
@@ -10,14 +11,23 @@ const bookingData={status:'held' as const,revision:1,source:'website' as const,.
 describe('real PostgreSQL transaction and constraints',()=>{
   let h:TestHarness
   beforeAll(async()=>{h=await createHarness()})
-  beforeEach(async()=>{await h.reset()})
+  let offerFixture:{offerId:string;versionId:string;customerId:string}
+  beforeEach(async()=>{
+    await h.reset()
+    const customer=await h.seed('customers',{name:'Transaction proof customer',email:'proof@example.test',password:'Synthetic-proof-passphrase-946!',_verified:true})
+    const policy=await h.seed('policy-versions',{revision:1,approved:true,active:false,synthetic:true,approvalReference:'synthetic-transaction-proof',approvedSections:['offers'],sections:{offers:{enabled:true,accountScope:'all-customers',discountOrder:'before-fees-and-tax'}}})
+    const offer=await h.seed('offers',{name:'Transaction proof benefit',active:false,usageRevision:0})
+    const version=await h.seed('offer-versions',{offer:offer.id,policyVersion:policy.id,name:'Transaction proof benefit',revision:1,terms:syntheticOfferTerms({overallLimit:null,perAccountLimit:null,bookingFrom:'2000-01-01T00:00:00Z',bookingUntil:'2100-01-01T00:00:00Z',stayFrom:'2000-01-01',stayUntil:'2100-01-01'}),approved:true,approvalReference:'synthetic-transaction-proof',publishedAt:h.clock.now(),synthetic:true})
+    await h.payload.update({collection:'offers',id:offer.id,data:{active:true,currentVersion:version.id},overrideAccess:true})
+    offerFixture={offerId:offer.id,versionId:version.id,customerId:customer.id}
+  })
   afterAll(async()=>{await h?.close()})
   async function writeReservation(tx:DbTx,roomId:string,faultAfter?:string){
     const {payload,req}=tx
     const fail=(step:string)=>{if(step===faultAfter)throw new Error('injected rollback fault')}
-    const booking=await payload.create({collection:'bookings',data:bookingData,req,overrideAccess:false});fail('booking')
+    const booking=await payload.create({collection:'bookings',data:{...bookingData,ownerCustomer:offerFixture.customerId},req,overrideAccess:false});fail('booking')
     await payload.create({collection:'allocations',data:{room:roomId,booking:booking.id,...stay,purpose:'hold',released:false},req,overrideAccess:false});fail('allocation')
-    await payload.create({collection:'offer-allocations',data:{booking:booking.id,offerVersionId:'fixture-v1',customerId:randomUUID(),allocationKey:randomUUID(),state:'reserved'},req,overrideAccess:false});fail('offer')
+    await payload.create({collection:'offer-allocations',data:{booking:booking.id,offer:offerFixture.offerId,offerVersion:offerFixture.versionId,customer:offerFixture.customerId,allocationKey:randomUUID(),state:'reserved'},req,overrideAccess:false});fail('offer')
     await payload.create({collection:'payment-attempts',data:{booking:booking.id,merchantReference:randomUUID(),commandKey:randomUUID(),fingerprint:'fixture',amountMinor:'9007199254740993',currency:'PHP',acceptedContext:{fixture:true},purpose:'booking',revision:1,state:'preparing',deadline:'2026-11-13T05:00:00.000Z'},req,overrideAccess:false});fail('attempt')
     await payload.create({collection:'audit-entries',data:{actor,action:'fixture:created',recordType:'booking',recordId:booking.id,outcome:'success'},req,overrideAccess:false});fail('audit')
     await payload.create({collection:'work-items',data:{semanticKey:randomUUID(),kind:'create-checkout',state:'ready',generation:0,attempts:0,payload:{bookingId:booking.id},availableAt:'2026-11-13T04:00:00.000Z'},req,overrideAccess:false});fail('work')
@@ -90,7 +100,7 @@ describe('real PostgreSQL transaction and constraints',()=>{
       const current=await payload.findByID({collection:'work-items',id:work.id,req,overrideAccess:true})
       if(++entered<=2){if(entered===2)release();await barrier}
       await payload.update({collection:'work-items',id:work.id,data:{attempts:current.attempts+1},req,overrideAccess:false})
-      await payload.create({collection:'bookings',data:bookingData,req,overrideAccess:false})
+      await payload.create({collection:'bookings',data:{...bookingData,ownerCustomer:offerFixture.customerId},req,overrideAccess:false})
     })
     await Promise.all([increment(),increment()])
     expect((await h.rows('work-items'))[0].attempts).toBe(2)

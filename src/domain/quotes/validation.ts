@@ -7,7 +7,7 @@ import {relationshipId,requireCustomer} from '@/features/customer/bookings'
 import {parseRuntimePolicy} from '@/domain/policy/parse'
 import {calculatePrice,rateRulesSchema} from './calculate'
 import type {QuoteSnapshot,AcceptedQuote} from './types'
-export const quoteRequestSchema=z.object({stay:z.object({roomTypeId:z.uuid(),arrival:z.string(),departure:z.string(),occupancy:z.object({adults:z.number().int().min(1).max(100),children:z.number().int().min(0).max(100)}).strict()}).strict()}).strict()
+export const quoteRequestSchema=z.object({stay:z.object({roomTypeId:z.uuid(),arrival:z.string(),departure:z.string(),occupancy:z.object({adults:z.number().int().min(1).max(100),children:z.number().int().min(0).max(100)}).strict()}).strict(),offerVersionId:z.uuid().optional()}).strict()
 export const pricingPolicySchema=z.object({currency:z.literal('PHP'),quoteMinutes:z.number().int().min(1).max(60),zeroTotal:z.enum(['unavailable','confirm-without-payment'])}).strict()
 const money=z.object({minor:z.string().regex(/^(0|[1-9]\d*)$/).max(60),currency:z.literal('PHP')}).strict()
 const snapshotSchema=z.object({version:z.number().int().positive(),stay:quoteRequestSchema.shape.stay,roomType:z.object({id:z.uuid(),name:z.string().max(200)}).strict(),policyVersionId:z.uuid(),policyRevision:z.number().int().positive(),rateVersionId:z.uuid(),offerVersionId:z.uuid().nullable(),issuedAt:z.iso.datetime(),expiresAt:z.iso.datetime(),synthetic:z.boolean(),components:z.array(z.object({kind:z.enum(['night','extra-adult','child','discount','fee','tax']),label:z.string().max(160),date:z.string().optional(),amount:money}).strict()).max(500),subtotal:money,discount:money,fees:money,taxes:money,total:money}).strict()
@@ -19,7 +19,7 @@ export async function quoteIdentity(tx:DbTx,ctx:CommandContext,row?:Quote){
 }
 export function quoteSnapshot(row:Quote):QuoteSnapshot{
   const snapshot=snapshotSchema.parse(row.snapshot)
-  if(snapshot.version!==row.version||snapshot.total.minor!==row.amountMinor||snapshot.total.currency!==row.currency||snapshot.policyVersionId!==relationshipId(row.policyVersion)||snapshot.rateVersionId!==relationshipId(row.rateVersion))throw new Error('Quote context failed validation')
+  if(snapshot.version!==row.version||snapshot.total.minor!==row.amountMinor||snapshot.total.currency!==row.currency||snapshot.policyVersionId!==relationshipId(row.policyVersion)||snapshot.rateVersionId!==relationshipId(row.rateVersion)||snapshot.offerVersionId!==relationshipId(row.offerVersion))throw new Error('Quote context failed validation')
   return {...snapshot,id:row.id}
 }
 export function acceptedQuote(row:Quote):AcceptedQuote{

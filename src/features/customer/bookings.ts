@@ -15,10 +15,10 @@ export async function requireCustomer(tx:DbTx){
 export const relationshipId=(value:string|{id:string}|null|undefined):string|null=>typeof value==='string'?value:value?.id??null
 export async function bookingSummaries(tx:DbTx,rows:Booking[]):Promise<BookingSummary[]>{
   if(!rows.length)return []
-  const ids=rows.map(row=>row.id),[attempts,transactions]=await Promise.all([
-    tx.payload.find({collection:'payment-attempts',where:{booking:{in:ids}},limit:1000,sort:['-createdAt','-id'],depth:0,overrideAccess:false,req:tx.req}),
-    tx.payload.find({collection:'payment-transactions',where:{booking:{in:ids}},limit:1000,sort:['-createdAt','-id'],depth:0,overrideAccess:false,req:tx.req}),
-  ])
+  const ids=rows.map(row=>row.id)
+  // The transaction owns one PostgreSQL client; do not overlap queries on it.
+  const attempts=await tx.payload.find({collection:'payment-attempts',where:{booking:{in:ids}},limit:1000,sort:['-createdAt','-id'],depth:0,overrideAccess:false,req:tx.req})
+  const transactions=await tx.payload.find({collection:'payment-transactions',where:{booking:{in:ids}},limit:1000,sort:['-createdAt','-id'],depth:0,overrideAccess:false,req:tx.req})
   if(attempts.hasNextPage||transactions.hasNextPage)throw new Error('Booking payment history requires operator review')
   return rows.map(row=>{
     const contact=z.object({name:z.string().optional(),email:z.string().optional(),phone:z.string().optional()}).safeParse(row.contact)

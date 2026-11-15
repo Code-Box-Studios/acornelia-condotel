@@ -12,6 +12,7 @@ import * as migration_20261114_055830_customer_auth_capabilities from './2026111
 import * as migration_20261115_182340_customer_history_claims from './20261115_182340_customer_history_claims';
 import * as migration_20261115_183744_physical_inventory from './20261115_183744_physical_inventory';
 import * as migration_20261115_185704_immutable_quotes_rates from './20261115_185704_immutable_quotes_rates';
+import * as migration_20261115_193116_account_offer_usage from './20261115_193116_account_offer_usage';
 
 export const migrations = [
   {
@@ -82,6 +83,11 @@ export const migrations = [
   {
     up: migration_20261115_185704_immutable_quotes_rates.up,
     down: migration_20261115_185704_immutable_quotes_rates.down,
-    name: '20261115_185704_immutable_quotes_rates'
+    name: '20261115_185704_immutable_quotes_rates',
+  },
+  {
+    up: migration_20261115_193116_account_offer_usage.up,
+    down: migration_20261115_193116_account_offer_usage.down,
+    name: '20261115_193116_account_offer_usage'
   },
 ];

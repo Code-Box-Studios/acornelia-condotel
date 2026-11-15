@@ -68,6 +68,8 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    offers: Offer;
+    'offer-versions': OfferVersion;
     'rate-plans': RatePlan;
     quotes: Quote;
     'policy-versions': PolicyVersion;
@@ -99,6 +101,8 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    offers: OffersSelect<false> | OffersSelect<true>;
+    'offer-versions': OfferVersionsSelect<false> | OfferVersionsSelect<true>;
     'rate-plans': RatePlansSelect<false> | RatePlansSelect<true>;
     quotes: QuotesSelect<false> | QuotesSelect<true>;
     'policy-versions': PolicyVersionsSelect<false> | PolicyVersionsSelect<true>;
@@ -187,6 +191,77 @@ export interface CustomerAuthOperations {
     email: string;
     password: string;
   };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "offers".
+ */
+export interface Offer {
+  id: string;
+  name: string;
+  active: boolean;
+  currentVersion?: (string | null) | OfferVersion;
+  usageRevision: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "offer-versions".
+ */
+export interface OfferVersion {
+  id: string;
+  offer: string | Offer;
+  policyVersion: string | PolicyVersion;
+  name: string;
+  revision: number;
+  terms:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  approved: boolean;
+  approvalReference?: string | null;
+  publishedAt: string;
+  synthetic: boolean;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "policy-versions".
+ */
+export interface PolicyVersion {
+  id: string;
+  revision: number;
+  approvedSections:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  sections:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  approved: boolean;
+  active: boolean;
+  approvalReference?: string | null;
+  synthetic: boolean;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -283,38 +358,6 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "policy-versions".
- */
-export interface PolicyVersion {
-  id: string;
-  revision: number;
-  approvedSections:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  sections:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  approved: boolean;
-  active: boolean;
-  approvalReference?: string | null;
-  synthetic: boolean;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "quotes".
  */
 export interface Quote {
@@ -351,6 +394,7 @@ export interface Quote {
     | null;
   policyVersion: string | PolicyVersion;
   rateVersion: string | RatePlan;
+  offerVersion?: (string | null) | OfferVersion;
   amountMinor: string;
   currency: string;
   issuedAt: string;
@@ -675,11 +719,16 @@ export interface Enquiry {
  */
 export interface OfferAllocation {
   id: string;
-  offerVersionId: string;
+  offer: string | Offer;
+  offerVersion: string | OfferVersion;
+  quote?: (string | null) | Quote;
   booking: string | Booking;
   allocationKey: string;
   state: 'reserved' | 'consumed' | 'released';
-  customerId: string;
+  customer: string | Customer;
+  consumedAt?: string | null;
+  releasedAt?: string | null;
+  releaseReason?: ('failed' | 'expired-unpaid' | 'cancelled' | 'refunded' | 'reissue') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -812,6 +861,14 @@ export interface PayloadKv {
 export interface PayloadLockedDocument {
   id: string;
   document?:
+    | ({
+        relationTo: 'offers';
+        value: string | Offer;
+      } | null)
+    | ({
+        relationTo: 'offer-versions';
+        value: string | OfferVersion;
+      } | null)
     | ({
         relationTo: 'rate-plans';
         value: string | RatePlan;
@@ -962,6 +1019,35 @@ export interface PayloadMigration {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "offers_select".
+ */
+export interface OffersSelect<T extends boolean = true> {
+  name?: T;
+  active?: T;
+  currentVersion?: T;
+  usageRevision?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "offer-versions_select".
+ */
+export interface OfferVersionsSelect<T extends boolean = true> {
+  offer?: T;
+  policyVersion?: T;
+  name?: T;
+  revision?: T;
+  terms?: T;
+  approved?: T;
+  approvalReference?: T;
+  publishedAt?: T;
+  synthetic?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "rate-plans_select".
  */
 export interface RatePlansSelect<T extends boolean = true> {
@@ -990,6 +1076,7 @@ export interface QuotesSelect<T extends boolean = true> {
   rateSnapshot?: T;
   policyVersion?: T;
   rateVersion?: T;
+  offerVersion?: T;
   amountMinor?: T;
   currency?: T;
   issuedAt?: T;
@@ -1321,11 +1408,16 @@ export interface AllocationsSelect<T extends boolean = true> {
  * via the `definition` "offer-allocations_select".
  */
 export interface OfferAllocationsSelect<T extends boolean = true> {
-  offerVersionId?: T;
+  offer?: T;
+  offerVersion?: T;
+  quote?: T;
   booking?: T;
   allocationKey?: T;
   state?: T;
-  customerId?: T;
+  customer?: T;
+  consumedAt?: T;
+  releasedAt?: T;
+  releaseReason?: T;
   updatedAt?: T;
   createdAt?: T;
 }
