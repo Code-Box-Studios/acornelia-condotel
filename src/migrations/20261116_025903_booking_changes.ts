@@ -6,31 +6,31 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   CREATE TYPE "public"."enum_booking_changes_state" AS ENUM('awaiting-payment', 'completed', 'failed', 'abandoned');
   ALTER TYPE "public"."enum_quotes_scope" ADD VALUE 'staff-change';
   CREATE TABLE "booking_changes" (
-  	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-  	"command_key" varchar NOT NULL,
-  	"fingerprint" varchar NOT NULL,
-  	"booking_id" uuid NOT NULL,
-  	"staff_id" uuid NOT NULL,
-  	"kind" "enum_booking_changes_kind" NOT NULL,
-  	"state" "enum_booking_changes_state" NOT NULL,
-  	"base_revision" numeric NOT NULL,
-  	"target_revision" numeric NOT NULL,
-  	"quote_id" uuid,
-  	"payment_attempt_id" uuid,
-  	"original_quote" jsonb NOT NULL,
-  	"accepted_quote" jsonb NOT NULL,
-  	"original_allocation" jsonb NOT NULL,
-  	"delta_minor" varchar NOT NULL,
-  	"currency" varchar NOT NULL,
-  	"agreement_reference" varchar NOT NULL,
-  	"reason" varchar NOT NULL,
-  	"completed_at" timestamp(3) with time zone,
-  	"abandoned_at" timestamp(3) with time zone,
-  	"reason_code" varchar,
-  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+    "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    "command_key" varchar NOT NULL,
+    "fingerprint" varchar NOT NULL,
+    "booking_id" uuid NOT NULL,
+    "staff_id" uuid NOT NULL,
+    "kind" "enum_booking_changes_kind" NOT NULL,
+    "state" "enum_booking_changes_state" NOT NULL,
+    "base_revision" numeric NOT NULL,
+    "target_revision" numeric NOT NULL,
+    "quote_id" uuid,
+    "payment_attempt_id" uuid,
+    "original_quote" jsonb NOT NULL,
+    "accepted_quote" jsonb NOT NULL,
+    "original_allocation" jsonb NOT NULL,
+    "delta_minor" varchar NOT NULL,
+    "currency" varchar NOT NULL,
+    "agreement_reference" varchar NOT NULL,
+    "reason" varchar NOT NULL,
+    "completed_at" timestamp(3) with time zone,
+    "abandoned_at" timestamp(3) with time zone,
+    "reason_code" varchar,
+    "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+    "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
-  
+
   ALTER TABLE "quotes" ADD COLUMN "change_context" jsonb;
   ALTER TABLE "bookings" ADD COLUMN "current_quote_id" uuid;
   ALTER TABLE "payload_locked_documents_rels" ADD COLUMN "booking_changes_id" uuid;
@@ -96,9 +96,9 @@ export async function down({ db }: MigrateDownArgs): Promise<void> {
    ALTER TABLE "booking_changes" DISABLE ROW LEVEL SECURITY;
   DROP TABLE "booking_changes" CASCADE;
   ALTER TABLE "bookings" DROP CONSTRAINT "bookings_current_quote_id_quotes_id_fk";
-  
+
   ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT "payload_locked_documents_rels_booking_changes_fk";
-  
+
   ALTER TABLE "quotes" ALTER COLUMN "scope" SET DATA TYPE text;
   ALTER TABLE "quotes" ALTER COLUMN "scope" SET DEFAULT 'website'::text;
   DROP TYPE "public"."enum_quotes_scope";
