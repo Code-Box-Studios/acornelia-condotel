@@ -35,7 +35,7 @@ export async function runWorkBatch(ctx:CommandContext,handlers:WorkHandlers,opti
       }
     }catch{result={state:dispatched?'uncertain':'retry',reason:'unexpected'}}
     await completeWork(ctx,lease,result)
-    const state=dispatched&&!repeatable(lease.kind)&&result.state!=='done'?'uncertain':result.state==='retry'&&lease.attempts>=policy.maxAttempts?'failed':result.state
+    const state=dispatched&&!repeatable(lease.kind)&&result.state!=='done'&&!(result.definitelyNotSent&&['email','enquiry'].includes(lease.kind))?'uncertain':result.state==='retry'&&lease.attempts>=policy.maxAttempts?'failed':result.state
     if(state==='done')stats.completed++
     if(state==='uncertain')stats.uncertain++
     if(state==='failed')stats.failed++

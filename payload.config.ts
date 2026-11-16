@@ -4,7 +4,7 @@ import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
-import { unconfiguredEmailAdapter } from './src/email/unconfigured'
+import { durablePayloadEmailAdapter } from './src/payload/email'
 import {withStaffAudit,withGlobalStaffAudit,failedOperation} from './src/payload/hooks/audit'
 import { Customers } from './src/payload/collections/Customers'
 import { StaffUsers } from './src/payload/collections/StaffUsers'
@@ -27,6 +27,7 @@ import {Posts} from './src/payload/collections/Posts'
 import {Enquiries} from './src/payload/collections/Enquiries'
 import {CheckoutDrafts} from './src/payload/collections/CheckoutDrafts'
 import {AuthTokens} from './src/payload/collections/AuthTokens'
+import {EmailMessages} from './src/payload/collections/EmailMessages'
 import {AuthDeliveries} from './src/payload/collections/AuthDeliveries'
 import {Offers} from './src/payload/collections/Offers'
 import {OfferVersions} from './src/payload/collections/OfferVersions'
@@ -40,11 +41,11 @@ import {AuthThrottles} from './src/payload/collections/AuthThrottles'
 const dirname=path.dirname(fileURLToPath(import.meta.url))
 export function createPayloadConfig(databaseUrl=process.env.DATABASE_URL,driver?:PostgresAdapterArgs['pg']){return buildConfig({
   secret:process.env.PAYLOAD_SECRET || '',
-  cookiePrefix:'acornelia',email:unconfiguredEmailAdapter,graphQL:{disable:true},
+  cookiePrefix:'acornelia',email:durablePayloadEmailAdapter,graphQL:{disable:true},
   serverURL:process.env.APP_URL || 'http://localhost:3042',
   admin:{user:'staff-users',importMap:{baseDir:dirname}},
   globals:[Property,SitePages,Policies].map(withGlobalStaffAudit),
-  collections:[Offers,OfferVersions,RatePlans,Quotes,PolicyVersions,RoomBlocks,BookingClaims,BookingViews,AuthTokens,AuthDeliveries,AuthThrottles,CheckoutDrafts,Posts,Enquiries,RoomTypes,Media,StaffUsers,Customers,Rooms,Bookings,Allocations,OfferAllocations,PaymentAttempts,PaymentTransactions,PaymentInbox,PaymentIssues,AuditEntries,WorkItems].map(withStaffAudit), editor:lexicalEditor(),sharp,
+  collections:[Offers,OfferVersions,RatePlans,Quotes,PolicyVersions,RoomBlocks,BookingClaims,BookingViews,AuthTokens,AuthDeliveries,EmailMessages,AuthThrottles,CheckoutDrafts,Posts,Enquiries,RoomTypes,Media,StaffUsers,Customers,Rooms,Bookings,Allocations,OfferAllocations,PaymentAttempts,PaymentTransactions,PaymentInbox,PaymentIssues,AuditEntries,WorkItems].map(withStaffAudit), editor:lexicalEditor(),sharp,
   db:postgresAdapter({pg:driver,pool:{connectionString:databaseUrl,max:8},idType:'uuid',push:false,disableCreateDatabase:true,migrationDir:path.resolve(dirname,'src/migrations'),transactionOptions:{isolationLevel:'serializable'}}),
   typescript:{outputFile:path.resolve(dirname,'src/payload-types.ts')},
   csrf:[process.env.APP_URL || 'http://localhost:3042'],

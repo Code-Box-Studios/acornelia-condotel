@@ -6,6 +6,6 @@ export type WorkIntent={semanticKey:string;kind:WorkKind;payload:WorkPayload;ava
 export type WorkLease={id:string;kind:WorkKind;payload:WorkPayload;generation:number;owner:string;expiresAt:string;attempts:number}
 export type WorkReason='retryable'|'timeout'|'provider-unavailable'|'transport-unconfigured'|'invalid-work'|'unexpected'|'lease-expired-after-dispatch'|'attempts-exhausted'
 /** apply is internal database-only code. Network calls must finish before completion opens a transaction. */
-export type WorkResult={state:'done'|'retry'|'uncertain'|'failed';reason?:WorkReason;apply?:(tx:DbTx)=>Promise<void>}
+export type WorkResult={state:'done'|'retry'|'uncertain'|'failed';reason?:WorkReason;definitelyNotSent?:true;apply?:(tx:DbTx)=>Promise<void>}
 export type WorkHandler={preflight?:(ctx:CommandContext,lease:WorkLease)=>Promise<WorkResult|null>;execute:(ctx:CommandContext,lease:WorkLease,signal:AbortSignal)=>Promise<WorkResult>}
 export type WorkHandlers=Partial<Record<WorkKind,WorkHandler>>

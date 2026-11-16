@@ -1,3 +1,4 @@
+import {markMailWorkFailure} from '@/email/work-state'
 import type {CommandContext} from '@/domain/db/types'
 import type {WorkKind,WorkLease} from './types'
 import {randomBytes} from 'node:crypto'
@@ -15,6 +16,7 @@ export async function claimWork(ctx:CommandContext,kind:WorkKind):Promise<WorkLe
       if(unsafe||row.attempts>=policy.maxAttempts||!payload){
         const state=unsafe?'uncertain':'failed',reason=unsafe?'lease-expired-after-dispatch':!payload?'invalid-work':'attempts-exhausted'
         await tx.payload.update({collection:'work-items',id:row.id,data:{state,lastError:reason,leaseOwner:null,leaseExpires:null},req:tx.req,overrideAccess:false})
+        await markMailWorkFailure(tx,row,state)
         await appendAudit(tx,{action:'work:escalated',recordType:'work-items',recordId:row.id,outcome:unsafe?'unknown':'failed',safeChanges:{state,reasonCode:reason}})
         continue
       }

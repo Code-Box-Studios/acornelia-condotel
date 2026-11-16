@@ -1,3 +1,4 @@
+import {queueBookingConfirmation} from '@/email/storage'
 import {randomBytes} from 'node:crypto'
 import {isDeepStrictEqual} from 'node:util'
 import {z} from 'zod'
@@ -12,7 +13,6 @@ import {validateStay} from '@/domain/inventory/policy'
 import {freePhysicalRooms} from '@/domain/inventory/availability'
 import {consumeOffer} from '@/domain/offers/reserve'
 import {bumpOfferUsage,loadOfferVersion,offerUsage} from '@/domain/offers/storage'
-import {enqueue} from '@/domain/work/enqueue'
 import {appendAudit} from '@/domain/audit/append'
 const lateSchema=z.object({action:z.enum(['confirm-if-available','staff-review']),maxMinutes:z.number().int().min(1).max(10080)}).strict()
 export async function originalPaymentContext(tx:DbTx,booking:Booking,attempt:PaymentAttempt):Promise<AcceptedQuote>{
@@ -49,7 +49,7 @@ export async function planConfirmation(tx:DbTx,ctx:CommandContext,booking:Bookin
 }
 export async function confirmPayment(tx:DbTx,ctx:CommandContext,booking:Booking,attempt:PaymentAttempt,quote:AcceptedQuote,payment:PaymentTransaction,plan:Extract<Plan,{ok:true}>):Promise<void>{
   const now=ctx.clock.now()
-  await tx.payload.update({collection:'bookings',id:booking.id,data:{status:'confirmed',code:booking.code??'ACN-'+randomBytes(8).toString('hex').toUpperCase()},req:tx.req,overrideAccess:false})
+  const confirmed=await tx.payload.update({collection:'bookings',id:booking.id,data:{status:'confirmed',code:booking.code??'ACN-'+randomBytes(8).toString('hex').toUpperCase()},req:tx.req,overrideAccess:false})
   await tx.payload.update({collection:'payment-transactions',id:payment.id,data:{appliedRevision:booking.revision},req:tx.req,overrideAccess:false})
   if(plan.hold)await tx.payload.update({collection:'allocations',id:plan.hold.id,data:{purpose:'booking'},req:tx.req,overrideAccess:false})
   else await allocate(tx,{purpose:'booking',bookingId:booking.id,stay:quote.stay,policy:quote.policySnapshot,now})
@@ -62,6 +62,6 @@ export async function confirmPayment(tx:DbTx,ctx:CommandContext,booking:Booking,
   }
   if(offer)await consumeOffer(tx,offer.id,now)
   await tx.payload.update({collection:'payment-attempts',id:attempt.id,data:{state:'succeeded',resumeRequestedAt:null,nextReconcileAt:null},req:tx.req,overrideAccess:false})
-  await enqueue(tx,{semanticKey:'booking-confirmation:'+booking.id+':'+booking.revision,kind:'email',payload:{category:'booking',bookingId:booking.id,revision:booking.revision},availableAt:now})
+  await queueBookingConfirmation(tx,ctx,confirmed,quote)
   await appendAudit(tx,{action:'payment:confirmed',recordType:'bookings',recordId:booking.id,outcome:'success',safeChanges:{amountMinor:payment.amountMinor,currency:payment.currency,revision:booking.revision,status:'confirmed'}})
 }

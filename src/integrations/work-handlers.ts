@@ -1,3 +1,5 @@
+import {configuredMailer} from '@/email/transport'
+import {emailHandler} from '@/email/deliver'
 import type {CommandContext} from '@/domain/db/types'
 import type {WorkHandlers} from '@/domain/work/types'
 import {checkoutPreflight,dispatchCheckout} from '@/domain/payments/create-checkout'
@@ -14,5 +16,7 @@ export function workHandlersFor(ctx:CommandContext):WorkHandlers{
     handlers['reconcile-payment']={execute:(context,lease,signal)=>reconcileWork(context,lease,readGateway,signal)}
     handlers['expire-hold']=expiryHandler(readGateway)
   }
+  const mailer=configuredMailer(ctx.policy)
+  if(mailer){handlers.email=emailHandler(mailer);handlers.enquiry=emailHandler(mailer)}
   return handlers
 }

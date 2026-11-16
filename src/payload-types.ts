@@ -78,6 +78,7 @@ export interface Config {
     'booking-views': BookingView;
     'auth-tokens': AuthToken;
     'auth-deliveries': AuthDelivery;
+    'email-messages': EmailMessage;
     'auth-throttles': AuthThrottle;
     'checkout-drafts': CheckoutDraft;
     posts: Post;
@@ -113,6 +114,7 @@ export interface Config {
     'booking-views': BookingViewsSelect<false> | BookingViewsSelect<true>;
     'auth-tokens': AuthTokensSelect<false> | AuthTokensSelect<true>;
     'auth-deliveries': AuthDeliveriesSelect<false> | AuthDeliveriesSelect<true>;
+    'email-messages': EmailMessagesSelect<false> | EmailMessagesSelect<true>;
     'auth-throttles': AuthThrottlesSelect<false> | AuthThrottlesSelect<true>;
     'checkout-drafts': CheckoutDraftsSelect<false> | CheckoutDraftsSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
@@ -639,57 +641,28 @@ export interface AuthDelivery {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "auth-throttles".
+ * via the `definition` "email-messages".
  */
-export interface AuthThrottle {
+export interface EmailMessage {
   id: string;
-  key: string;
-  count: number;
-  expiresAt: string;
+  semanticKey: string;
+  category: 'booking' | 'booking-view' | 'auth' | 'claim' | 'staff-reset' | 'enquiry' | 'payment-issue';
+  encryptedSnapshot: string;
+  encryptedMessage?: string | null;
+  booking?: (string | null) | Booking;
+  revision?: number | null;
+  authDelivery?: (string | null) | AuthDelivery;
+  enquiry?: (string | null) | Enquiry;
+  issue?: (string | null) | PaymentIssue;
+  expiresAt?: string | null;
+  state: 'pending' | 'accepted' | 'failed' | 'uncertain' | 'cancelled';
+  providerMessageId?: string | null;
+  acceptedAt?: string | null;
+  reason?: ('temporary' | 'permanent' | 'timeout' | 'transport' | 'partial' | 'expired' | 'quota' | 'obsolete') | null;
+  reservedDay?: string | null;
+  recipientCount?: number | null;
   updatedAt: string;
   createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "checkout-drafts".
- */
-export interface CheckoutDraft {
-  id: string;
-  secretHash: string;
-  browserHash: string;
-  ownerCustomerId?: string | null;
-  commandKey?: string | null;
-  expiresAt: string;
-  version: number;
-  encryptedState: string;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "posts".
- */
-export interface Post {
-  id: string;
-  type: 'story' | 'event';
-  title: string;
-  slug: string;
-  summary?: string | null;
-  body?: string | null;
-  /**
-   * Property calendar date, YYYY-MM-DD. Required for published events.
-   */
-  eventDate?: string | null;
-  cover?: (string | null) | Media;
-  publishedAt?: string | null;
-  /**
-   * Local review fixture; production excludes and refuses publication.
-   */
-  synthetic?: boolean | null;
-  privateNotes?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  _status?: ('draft' | 'published') | null;
 }
 /**
  * An enquiry does not reserve a room or confirm payment.
@@ -728,20 +701,21 @@ export interface Enquiry {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "offer-allocations".
+ * via the `definition` "payment-issues".
  */
-export interface OfferAllocation {
+export interface PaymentIssue {
   id: string;
-  offer: string | Offer;
-  offerVersion: string | OfferVersion;
-  quote?: (string | null) | Quote;
-  booking: string | Booking;
-  allocationKey: string;
-  state: 'reserved' | 'consumed' | 'released';
-  customer: string | Customer;
-  consumedAt?: string | null;
-  releasedAt?: string | null;
-  releaseReason?: ('failed' | 'expired-unpaid' | 'cancelled' | 'refunded' | 'reissue') | null;
+  issueKey: string;
+  reasonCode: string;
+  booking?: (string | null) | Booking;
+  attempt?: (string | null) | PaymentAttempt;
+  payment?: (string | null) | PaymentTransaction;
+  inbox?: (string | null) | PaymentInbox;
+  observedAmountMinor?: string | null;
+  observedCurrency?: string | null;
+  state: 'open' | 'resolved';
+  resolvedAt?: string | null;
+  resolutionCode?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -842,21 +816,74 @@ export interface PaymentInbox {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "payment-issues".
+ * via the `definition` "auth-throttles".
  */
-export interface PaymentIssue {
+export interface AuthThrottle {
   id: string;
-  issueKey: string;
-  reasonCode: string;
-  booking?: (string | null) | Booking;
-  attempt?: (string | null) | PaymentAttempt;
-  payment?: (string | null) | PaymentTransaction;
-  inbox?: (string | null) | PaymentInbox;
-  observedAmountMinor?: string | null;
-  observedCurrency?: string | null;
-  state: 'open' | 'resolved';
-  resolvedAt?: string | null;
-  resolutionCode?: string | null;
+  key: string;
+  count: number;
+  expiresAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "checkout-drafts".
+ */
+export interface CheckoutDraft {
+  id: string;
+  secretHash: string;
+  browserHash: string;
+  ownerCustomerId?: string | null;
+  commandKey?: string | null;
+  expiresAt: string;
+  version: number;
+  encryptedState: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "posts".
+ */
+export interface Post {
+  id: string;
+  type: 'story' | 'event';
+  title: string;
+  slug: string;
+  summary?: string | null;
+  body?: string | null;
+  /**
+   * Property calendar date, YYYY-MM-DD. Required for published events.
+   */
+  eventDate?: string | null;
+  cover?: (string | null) | Media;
+  publishedAt?: string | null;
+  /**
+   * Local review fixture; production excludes and refuses publication.
+   */
+  synthetic?: boolean | null;
+  privateNotes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "offer-allocations".
+ */
+export interface OfferAllocation {
+  id: string;
+  offer: string | Offer;
+  offerVersion: string | OfferVersion;
+  quote?: (string | null) | Quote;
+  booking: string | Booking;
+  allocationKey: string;
+  state: 'reserved' | 'consumed' | 'released';
+  customer: string | Customer;
+  consumedAt?: string | null;
+  releasedAt?: string | null;
+  releaseReason?: ('failed' | 'expired-unpaid' | 'cancelled' | 'refunded' | 'reissue') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -991,6 +1018,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'auth-deliveries';
         value: string | AuthDelivery;
+      } | null)
+    | ({
+        relationTo: 'email-messages';
+        value: string | EmailMessage;
       } | null)
     | ({
         relationTo: 'auth-throttles';
@@ -1277,6 +1308,30 @@ export interface AuthDeliveriesSelect<T extends boolean = true> {
   expiresAt?: T;
   encryptedState?: T;
   state?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "email-messages_select".
+ */
+export interface EmailMessagesSelect<T extends boolean = true> {
+  semanticKey?: T;
+  category?: T;
+  encryptedSnapshot?: T;
+  encryptedMessage?: T;
+  booking?: T;
+  revision?: T;
+  authDelivery?: T;
+  enquiry?: T;
+  issue?: T;
+  expiresAt?: T;
+  state?: T;
+  providerMessageId?: T;
+  acceptedAt?: T;
+  reason?: T;
+  reservedDay?: T;
+  recipientCount?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -32,4 +32,4 @@ export function proxy(request:NextRequest){
   // No referrer is sent to external payment destinations; handoff also sets no-referrer.
   return privateResponse(NextResponse.next(),path==='/book/payment'?'same-origin':'no-referrer')
 }
-export const config={matcher:['/api/:path*','/admin/:path*','/account/:path*','/booking/:path*','/book/:path*','/updates/preview/:path*']}
+export const config={matcher:['/api/:path*','/admin/:path*','/account/:path*','/booking/:path*','/staff/:path*','/book/:path*','/updates/preview/:path*']}

@@ -198,7 +198,7 @@ Save the accepted quote/version and policy context. Later public rates, policies
 
 ### Confirmation and check-in
 
-Every confirmed reservation has a unique booking code. Booking confirmations include stay/payment details and a private booking-view link, and copy **codeboxstudios.official@gmail.com** for now. Failed email delivery does not invalidate a paid booking.
+Every confirmed reservation has a unique booking code. Booking confirmation details copy **codeboxstudios.official@gmail.com** for now. The guest receives the private booking-view capability in a separate guest-only message, alongside the same stay/price summary; the copied confirmation contains no bearer token. Failed email delivery does not invalidate a paid booking.
 
 Staff must sign in to search or scan a booking, check name/dates/room/status and perform the approved arriving-guest identity checks before check-in. A code alone is neither identity proof nor public access to private details. If the code is unavailable, use authorized private search and the same checks.
 
@@ -454,3 +454,10 @@ Late automatic confirmation requires the original approved late policy and atomi
 Reconcile original payment identity and every merchant reference result without another create or renewed deadline. Independent successful reads retain actual money even during partial provider outages. Empty lookup never proves no creation. Approved bounded checking escalates unresolved attempts while retaining resources; staff issue resolution and alert delivery remain separate work. Fresh paid holds obey approved browser/account limits and a verified provider window; actual merchant timing remains a release gate.
 
 Expiry releases room and accepted offer usage atomically only after proven nonpayability or proven noncreation. Never-dispatched work is cancelled in the same transaction. Race verified success against expiry: retain/reacquire all required capacity under the original approved late policy, or keep a paid issue. Lease takeover must reject the old worker's effects. Private explicit resume can reopen only the same known link after fresh exact unstarted-session evidence, within the original deadline and approved count; it cannot create another payment or renew access.
+
+
+### Transactional email implementation clarification — November 16, 2026
+
+Freeze the booking contact and accepted stay/code/price with confirmation, regardless of sender readiness. Send the required confirmation copy without any authentication, claim or view token; queue a separate guest-only private-view message. Their arrival may differ. This preserves the confirmation copy while excluding private capabilities from it and increases local recipient accounting to three deliveries in the usual distinct-address case. Sending requires explicitly approved email transport, sender/domain evidence, recipient/lifetime/quota/retry settings and protected credentials; the implemented SMTP path remains a candidate until those approvals and live checks exist.
+
+Keep SMTP acceptance separate from inbox receipt. Partial/unknown delivery, crash and timeout never permit blind resend or invalidate a confirmed paid booking. Native staff reset must queue in its token transaction without making a network call there. Customer auth/claim mail has no booking CC, must recheck current account/grant/purpose/revocation/expiry, and cannot silently subscribe to marketing. Private fragment links are removed from page URLs and redeemed by explicit POST; guest viewing does not attach ownership. Claims require their independently reviewed grant and target account under approved policy. Verify actual receipt, bounce/quota response and assigned recovery ownership before release.

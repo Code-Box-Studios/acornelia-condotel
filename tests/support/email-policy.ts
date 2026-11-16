@@ -1,0 +1,2 @@
+import type {EmailPolicy} from '@/email/policy'
+export function syntheticEmailPolicy(overrides:Partial<EmailPolicy>={}):EmailPolicy{return {transport:'brevo-smtp',sender:{address:'hello@example.test',name:'Acornelia',verificationReference:'synthetic-mail-sender'},confirmationCc:'codeboxstudios.official@gmail.com',bookingViewMinutes:60,dailyRecipients:300,quotaTimezone:'UTC',timeoutMs:1000,enquiryTo:['enquiries@example.test'],issueTo:['operations@example.test'],claimDelivery:'disabled',...overrides}}

@@ -1,3 +1,4 @@
+import {queueBookingConfirmation} from '@/email/storage'
 import {recoveryPolicy,type RecoveryPolicy} from '@/domain/payments/recovery-policy'
 import {checkoutHoldAllowed} from './hold-limits'
 import {randomBytes} from 'node:crypto'
@@ -78,7 +79,7 @@ export async function startCheckout(ctx:CommandContext,input:CheckoutInput):Prom
         let attemptId:string|null=null
         if(zero){
           if(usage)await consumeOffer(tx,usage.id,now)
-          await enqueue(tx,{semanticKey:`booking-confirmation:${booking.id}:1`,kind:'email',payload:{category:'booking',bookingId:booking.id,revision:1},availableAt:now})
+          await queueBookingConfirmation(tx,ctx,booking,saved)
         }else{
           const attempt=await tx.payload.create({collection:'payment-attempts',data:{booking:booking.id,merchantReference:'ACN'+randomBytes(12).toString('hex'),commandKey:value.commandKey,fingerprint,amountMinor:saved.total.minor,currency:saved.total.currency,acceptedContext:{quote:saved,ownerCustomerId:ctx.actor.kind==='customer'?ctx.actor.id:null,contact:value.contact,stayingGuest,deadline,purpose:'booking',revision:1},purpose:'booking',revision:1,state:'preparing',deadline,reconcileSequence:0,resumeCount:0},req:tx.req,overrideAccess:false})
           attemptId=attempt.id

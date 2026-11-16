@@ -19,6 +19,7 @@ import * as migration_20261115_212448_checkout_status_dispatch from './20261115_
 import * as migration_20261115_223031_payment_inbox from './20261115_223031_payment_inbox';
 import * as migration_20261115_224545_canonical_payments from './20261115_224545_canonical_payments';
 import * as migration_20261115_234357_payment_recovery from './20261115_234357_payment_recovery';
+import * as migration_20261116_004618_transactional_email from './20261116_004618_transactional_email';
 
 export const migrations = [
   {
@@ -124,6 +125,11 @@ export const migrations = [
   {
     up: migration_20261115_234357_payment_recovery.up,
     down: migration_20261115_234357_payment_recovery.down,
-    name: '20261115_234357_payment_recovery'
+    name: '20261115_234357_payment_recovery',
+  },
+  {
+    up: migration_20261116_004618_transactional_email.up,
+    down: migration_20261116_004618_transactional_email.down,
+    name: '20261116_004618_transactional_email'
   },
 ];

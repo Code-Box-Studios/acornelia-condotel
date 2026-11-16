@@ -123,7 +123,7 @@ These are comparison options, not additional selected services. Prices are the d
 - Production subscription tiers, budget owner, provider accounts, regions, and resource sizing.
 - Persistent photo-storage provider and its Payload adapter.
 - Scheduled-job runner, frequency, authentication, retry limits, alerts, and recovery ownership.
-- Brevo integration transport, authenticated sending domain/address, branding decision, and sending allowance.
+- Final approval/configuration of the implemented Brevo SMTP candidate, authenticated sending domain/address, branding decision, and sending allowance.
 - Database recovery objectives, retention, restore testing, and any additional backup coverage.
 - Domain, launch date, maintenance responsibility, and business policies listed in the booking plan.
 
@@ -183,3 +183,10 @@ Task 13 implements application-owned PostgreSQL outbox records and generation-fe
 ### Maya transport implementation — November 15, 2026
 
 Task 15 uses a narrow server-side HTTP adapter over native fetch for one-time Checkout, verified payment retrieval and capability-gated void/refund calls. A small owned boundary makes exact money serialization, response validation, key/environment/host restrictions and unknown-outcome handling explicit. It introduces no provider, paid subscription or third-party payment SDK dependency. The existing Maya selection is unchanged. Current official documentation and the official Maya WooCommerce plugin were checked; [source contracts, local tests and remaining merchant gates](2026-11-15-maya-contract.md) are recorded separately. No real merchant capability, live credential, gateway expiry, refund delivery or sandbox connection was verified.
+
+
+### Transactional email candidate — November 16, 2026
+
+Task 20 implements the plan's proposed Brevo SMTP transport through the installed Payload Nodemailer adapter, with TLS, strict sender/configuration gates and durable worker-owned outcomes. Brevo remains the selected email provider; this implementation does not turn the proposed SMTP method, sender identity, quota or subscription into an owner-approved decision. HTTPS remains an unimplemented alternative requiring a compatible adapter and tested result/uncertainty contract. No new provider or paid resource was created.
+
+A copied booking confirmation contains no private capability. A separate guest-only message carries the booking-view link. The usual confirmation group therefore uses two messages and three locally metered recipient deliveries when guest and copy addresses differ; actual provider billing/allowance remains to be verified. Unknown SMTP acceptance cannot promise exactly-once delivery. Native staff reset queues in the original Payload token transaction, while customer auth uses its existing encrypted outbox; both use the same configured worker transport. Sender/domain activation, final method approval, bounce handling and actual inbox receipt remain Task 27 gates. See the [email runbook](../operations/deployment.md#durable-transactional-email--november-16-2026).
