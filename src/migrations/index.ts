@@ -18,6 +18,7 @@ import * as migration_20261115_204353_atomic_checkout from './20261115_204353_at
 import * as migration_20261115_212448_checkout_status_dispatch from './20261115_212448_checkout_status_dispatch';
 import * as migration_20261115_223031_payment_inbox from './20261115_223031_payment_inbox';
 import * as migration_20261115_224545_canonical_payments from './20261115_224545_canonical_payments';
+import * as migration_20261115_234357_payment_recovery from './20261115_234357_payment_recovery';
 
 export const migrations = [
   {
@@ -118,6 +119,11 @@ export const migrations = [
   {
     up: migration_20261115_224545_canonical_payments.up,
     down: migration_20261115_224545_canonical_payments.down,
-    name: '20261115_224545_canonical_payments'
+    name: '20261115_224545_canonical_payments',
+  },
+  {
+    up: migration_20261115_234357_payment_recovery.up,
+    down: migration_20261115_234357_payment_recovery.down,
+    name: '20261115_234357_payment_recovery'
   },
 ];

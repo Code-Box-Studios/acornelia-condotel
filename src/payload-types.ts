@@ -769,6 +769,25 @@ export interface PaymentAttempt {
   purpose: 'booking' | 'change';
   revision: number;
   state: 'preparing' | 'ready' | 'unknown' | 'pending' | 'succeeded' | 'closed';
+  createOutcome?: ('created' | 'refused' | 'unknown') | null;
+  createRefusalCode?: string | null;
+  createObservedAt?: string | null;
+  closedAt?: string | null;
+  closeEvidence?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  lastReconciledAt?: string | null;
+  nextReconcileAt?: string | null;
+  escalatedAt?: string | null;
+  reconcileSequence: number;
+  resumeCount: number;
+  resumeRequestedAt?: string | null;
   deadline: string;
   checkoutUrl?: string | null;
   providerCheckoutId?: string | null;
@@ -1525,6 +1544,17 @@ export interface PaymentAttemptsSelect<T extends boolean = true> {
   purpose?: T;
   revision?: T;
   state?: T;
+  createOutcome?: T;
+  createRefusalCode?: T;
+  createObservedAt?: T;
+  closedAt?: T;
+  closeEvidence?: T;
+  lastReconciledAt?: T;
+  nextReconcileAt?: T;
+  escalatedAt?: T;
+  reconcileSequence?: T;
+  resumeCount?: T;
+  resumeRequestedAt?: T;
   deadline?: T;
   checkoutUrl?: T;
   providerCheckoutId?: T;

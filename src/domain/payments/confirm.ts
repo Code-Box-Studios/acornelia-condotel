@@ -61,7 +61,7 @@ export async function confirmPayment(tx:DbTx,ctx:CommandContext,booking:Booking,
     await appendAudit(tx,{action:'offer:reacquired',recordType:'offer-allocations',recordId:offer.id,outcome:'success',safeChanges:{bookingId:booking.id,offerVersionId:version.id}})
   }
   if(offer)await consumeOffer(tx,offer.id,now)
-  await tx.payload.update({collection:'payment-attempts',id:attempt.id,data:{state:'succeeded'},req:tx.req,overrideAccess:false})
+  await tx.payload.update({collection:'payment-attempts',id:attempt.id,data:{state:'succeeded',resumeRequestedAt:null,nextReconcileAt:null},req:tx.req,overrideAccess:false})
   await enqueue(tx,{semanticKey:'booking-confirmation:'+booking.id+':'+booking.revision,kind:'email',payload:{category:'booking',bookingId:booking.id,revision:booking.revision},availableAt:now})
   await appendAudit(tx,{action:'payment:confirmed',recordType:'bookings',recordId:booking.id,outcome:'success',safeChanges:{amountMinor:payment.amountMinor,currency:payment.currency,revision:booking.revision,status:'confirmed'}})
 }

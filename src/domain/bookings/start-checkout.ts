@@ -1,3 +1,5 @@
+import {recoveryPolicy,type RecoveryPolicy} from '@/domain/payments/recovery-policy'
+import {checkoutHoldAllowed} from './hold-limits'
 import {randomBytes} from 'node:crypto'
 import type {CommandContext,DbTx} from '@/domain/db/types'
 import type {Booking} from '@/payload-types'
@@ -54,18 +56,20 @@ export async function startCheckout(ctx:CommandContext,input:CheckoutInput):Prom
         const now=ctx.clock.now()
         if(Date.parse(quote.expiresAt)<=Date.parse(now))throw new CheckoutRefused('quote-expired')
         const saved=acceptedQuote(quote)
-        let terms
+        let terms, recovery:RecoveryPolicy|undefined
         try{
-          const current=await requireCurrentPolicy(tx,ctx,['stay','pricing','checkout','bookingTerms','checkoutStatus',...(saved.offerVersionId?['offers']:[])])
+          const current=await requireCurrentPolicy(tx,ctx,['stay','pricing','checkout','bookingTerms','checkoutStatus',...(saved.total.minor!=='0'?['paymentRecovery']:[]),...(saved.offerVersionId?['offers']:[])])
           if(current.id!==saved.policyVersionId||current.revision!==saved.policyRevision)throw new Error('Policy changed')
           terms=checkoutPolicySchema.parse(current.sections.checkout)
           checkoutStatusPolicySchema.parse(current.sections.checkoutStatus)
+          if(saved.total.minor!=='0'){recovery=recoveryPolicy(current);if(terms.holdMinutes<=recovery.providerWindowMinutes)throw new Error('The hold must contain the verified provider window and dispatch budget')}
           if(!saved.terms)throw new Error('Review the approved booking terms before checkout')
         }catch{throw new CheckoutRefused('configuration-unavailable')}
         const stayingGuest=value.stayingGuest??value.contact.name
         if(!terms.thirdPartyBookings&&(stayingGuest.toLowerCase()!==value.contact.name.toLowerCase()||ctx.actor.kind==='customer'&&tx.req.user?.email.toLowerCase()!==value.contact.email))throw new CheckoutRefused('contact-not-allowed')
         const zero=saved.total.minor==='0'
         if(zero&&pricingPolicySchema.parse(saved.policySnapshot.sections.pricing).zeroTotal!=='confirm-without-payment')throw new CheckoutRefused('configuration-unavailable')
+        if(!zero&&(!recovery||!await checkoutHoldAllowed(tx,ctx,recovery)))throw new CheckoutRefused('hold-limit')
         const deadline=new Date(Date.parse(now)+terms.holdMinutes*60000).toISOString()
         const booking=await tx.payload.create({collection:'bookings',data:{ownerCustomer:ctx.actor.kind==='customer'?ctx.actor.id:undefined,checkoutKey:value.commandKey,checkoutFingerprint:fingerprint,checkoutBrowserHash:privateDigest('checkout-browser\0'+ctx.browserKey),checkoutQuote:saved.id,preparedAt:now,status:zero?'confirmed':'held',revision:1,arrival:dateToStorage(saved.stay.arrival),departure:dateToStorage(saved.stay.departure),acceptedQuote:saved,contact:value.contact,stayingGuest,source:'website',...(zero?{code:'ACN-'+randomBytes(8).toString('hex').toUpperCase()}:{})},req:tx.req,overrideAccess:false})
         await tx.payload.update({collection:'quotes',id:quote.id,data:{consumedByBooking:booking.id},req:tx.req,overrideAccess:false})
@@ -76,9 +80,10 @@ export async function startCheckout(ctx:CommandContext,input:CheckoutInput):Prom
           if(usage)await consumeOffer(tx,usage.id,now)
           await enqueue(tx,{semanticKey:`booking-confirmation:${booking.id}:1`,kind:'email',payload:{category:'booking',bookingId:booking.id,revision:1},availableAt:now})
         }else{
-          const attempt=await tx.payload.create({collection:'payment-attempts',data:{booking:booking.id,merchantReference:'ACN'+randomBytes(12).toString('hex'),commandKey:value.commandKey,fingerprint,amountMinor:saved.total.minor,currency:saved.total.currency,acceptedContext:{quote:saved,ownerCustomerId:ctx.actor.kind==='customer'?ctx.actor.id:null,contact:value.contact,stayingGuest,deadline,purpose:'booking',revision:1},purpose:'booking',revision:1,state:'preparing',deadline},req:tx.req,overrideAccess:false})
+          const attempt=await tx.payload.create({collection:'payment-attempts',data:{booking:booking.id,merchantReference:'ACN'+randomBytes(12).toString('hex'),commandKey:value.commandKey,fingerprint,amountMinor:saved.total.minor,currency:saved.total.currency,acceptedContext:{quote:saved,ownerCustomerId:ctx.actor.kind==='customer'?ctx.actor.id:null,contact:value.contact,stayingGuest,deadline,purpose:'booking',revision:1},purpose:'booking',revision:1,state:'preparing',deadline,reconcileSequence:0,resumeCount:0},req:tx.req,overrideAccess:false})
           attemptId=attempt.id
           await enqueue(tx,{semanticKey:'checkout:'+attempt.id,kind:'create-checkout',payload:{attemptId:attempt.id},availableAt:now})
+          await enqueue(tx,{semanticKey:'expire-hold:'+booking.id+':1',kind:'expire-hold',payload:{bookingId:booking.id},availableAt:deadline})
         }
         await appendAudit(tx,{action:'checkout:prepared',recordType:'bookings',recordId:booking.id,outcome:'success',safeChanges:{amountMinor:saved.total.minor,currency:saved.total.currency,revision:1,status:booking.status}})
         if(zero)return {state:'confirmed',bookingId:booking.id,attemptId:null,revision:1,deadline:null,total:saved.total}

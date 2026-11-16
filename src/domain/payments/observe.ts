@@ -25,12 +25,12 @@ export async function applyPaymentObservationTx(tx:DbTx,ctx:CommandContext,obser
   const bookingId=attempt?relationshipId(attempt.booking)!:undefined
   if(attempt){
     // Any authenticated remote operation blocks a fresh create, including mismatched money.
-    if(['preparing','ready'].includes(attempt.state))await tx.payload.update({collection:'payment-attempts',id:attempt.id,data:{state:'unknown'},req:tx.req,overrideAccess:false})
+    if(attempt.state==='preparing'||attempt.state==='ready'&&inbox.providerStatus!=='PENDING_TOKEN')await tx.payload.update({collection:'payment-attempts',id:attempt.id,data:{state:'unknown'},req:tx.req,overrideAccess:false})
     await enqueue(tx,{semanticKey:'reconcile-payment:'+attempt.id+':observation:'+inbox.id,kind:'reconcile-payment',payload:{attemptId:attempt.id},availableAt:now})
   }
   let payment=(await tx.payload.find({collection:'payment-transactions',where:{and:[{environment:{equals:inbox.environment}},{providerPaymentId:{equals:inbox.providerPaymentId}}]},limit:1,depth:0,req:tx.req,overrideAccess:false})).docs[0]
   const collected=inbox.providerStatus==='PAYMENT_SUCCESS',reversal=['VOIDED','REFUNDED'].includes(inbox.providerStatus)
-  const nextStatus:PaymentTransaction['status']=collected?'collected':authorized.has(inbox.providerStatus)?'authorized':failed.has(inbox.providerStatus)?'failed':inbox.providerStatus==='VOIDED'?'voided':'pending'
+  const nextStatus:PaymentTransaction['status']=collected?'collected':authorized.has(inbox.providerStatus)?'authorized':failed.has(inbox.providerStatus)?'failed':['VOIDED','CAPTURE_HOLD_EXPIRED'].includes(inbox.providerStatus)?'voided':'pending'
   let conflict=false
   if(payment){
     conflict=payment.status==='collected'&&(payment.amountMinor!==inbox.amountMinor||payment.currency!==inbox.currency||!!payment.merchantReference&&payment.merchantReference!==inbox.merchantReference)||!!relationshipId(payment.attempt)&&relationshipId(payment.attempt)!==attempt?.id

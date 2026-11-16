@@ -10,8 +10,10 @@ import {appendAudit} from '@/domain/audit/append'
 import {approvedCheckoutUrl} from '@/integrations/maya/urls'
 import {parseMoney} from '@/domain/shared/money'
 import {checkoutStatusPolicySchema,sqlError} from '@/domain/bookings/validation'
+import {requireCurrentPolicy} from '@/domain/policy/current'
+import {recoveryPolicy} from '@/domain/payments/recovery-policy'
 import {enqueue} from '@/domain/work/enqueue'
-export type CheckoutStatus={bookingId:string;state:'preparing'|'ready'|'checking'|'confirmed'|'closed';canPay:boolean;total:{minor:string;currency:string};deadline:string|null;code:string|null;roomName:string;arrival:string;departure:string;adults:number;children:number;timezone:string}
+export type CheckoutStatus={bookingId:string;state:'preparing'|'ready'|'checking'|'confirmed'|'closed';canPay:boolean;canRequestResume:boolean;total:{minor:string;currency:string};deadline:string|null;code:string|null;roomName:string;arrival:string;departure:string;adults:number;children:number;timezone:string}
 export class CheckoutAccessUnavailable extends Error{constructor(){super('Private checkout access is unavailable')}}
 export class CheckoutPollLimited extends Error{constructor(){super('Wait before checking payment again')}}
 const capabilitySchema=z.string().regex(/^[a-f0-9-]{36}\.[A-Za-z0-9_-]{43}$/)
@@ -89,12 +91,14 @@ async function projection(tx:DbTx,ctx:CommandContext,booking:Booking):Promise<{s
   }else if(attempt?.state==='closed')state='closed'
   else if(attempt&&Date.parse(attempt.deadline)>Date.parse(ctx.clock.now())){
     if(attempt.state==='preparing')state='preparing'
-    if(attempt.state==='ready'&&attempt.providerCheckoutId&&attempt.checkoutUrl&&attempt.providerEnvironment){
+    if(attempt.state==='ready'&&attempt.providerCheckoutId&&attempt.checkoutUrl&&attempt.providerEnvironment===parseEnvironment(process.env).mayaEnvironment){
       try{destination=approvedCheckoutUrl(attempt.providerEnvironment,attempt.providerCheckoutId,attempt.checkoutUrl);state='ready'}catch{/* Keep checking an unverified provider association. */}
     }
   }
   if(attempt&&(attempt.amountMinor!==total.minor||attempt.currency!==total.currency||relationshipId(attempt.booking)!==booking.id))throw new CheckoutAccessUnavailable()
-  return {status:{bookingId:booking.id,state,canPay:state==='ready'&&!!destination,total:parseMoney(total),deadline:attempt?.deadline??null,code:state==='confirmed'?booking.code??null:null,roomName:quote.roomType.name,arrival:quote.stay.arrival,departure:quote.stay.departure,adults:quote.stay.occupancy.adults,children:quote.stay.occupancy.children,timezone:(quote.policySnapshot.sections.stay as {timezone:string}).timezone},destination}
+  let canRequestResume=false
+  if(booking.status==='held'&&attempt&&['pending','unknown'].includes(attempt.state)&&attempt.providerCheckoutId&&attempt.checkoutUrl&&attempt.providerEnvironment===parseEnvironment(process.env).mayaEnvironment&&Date.parse(attempt.deadline)>Date.parse(ctx.clock.now())&&!attempt.escalatedAt&&!attempt.resumeRequestedAt){try{canRequestResume=attempt.resumeCount<recoveryPolicy(ctx.policy).maxBrowserResumes}catch{/* Resume requires current approved bounds. */}}
+  return {status:{bookingId:booking.id,state,canPay:state==='ready'&&!!destination,canRequestResume,total:parseMoney(total),deadline:attempt?.deadline??null,code:state==='confirmed'?booking.code??null:null,roomName:quote.roomType.name,arrival:quote.stay.arrival,departure:quote.stay.departure,adults:quote.stay.occupancy.adults,children:quote.stay.occupancy.children,timezone:(quote.policySnapshot.sections.stay as {timezone:string}).timezone},destination}
 }
 export async function readCheckoutStatus(ctx:CommandContext,capability:string):Promise<CheckoutStatus>{
   return command(ctx,async tx=>{const booking=await verifyAccess(tx,ctx,capability),config=await limits(tx,booking);await counter(tx,ctx,booking.id+'\0'+ctx.browserKey,config.pollPerMinute);return (await projection(tx,ctx,booking)).status})
@@ -113,5 +117,22 @@ export async function checkoutDestination(ctx:CommandContext,capability:string,b
     await enqueue(tx,{semanticKey:'reconcile-payment:'+attempt.id+':handoff',kind:'reconcile-payment',payload:{attemptId:attempt.id},availableAt:ctx.clock.now()})
     await appendAudit(tx,{action:'checkout:handed-off',recordType:'payment-attempts',recordId:attempt.id,outcome:'success',safeChanges:{state:'pending'}})
     return result.destination
+  })
+}
+export class CheckoutResumeUnavailable extends Error{constructor(){super('The original checkout cannot be reopened yet')}}
+export async function requestCheckoutResume(ctx:CommandContext,capability:string,bookingId:string):Promise<void>{
+  return command(ctx,async tx=>{
+    const booking=await verifyAccess(tx,ctx,capability)
+    if(booking.id!==bookingId)throw new CheckoutAccessUnavailable()
+    await counter(tx,ctx,'resume\0'+booking.id+'\0'+ctx.browserKey,10)
+    const policy=recoveryPolicy(await requireCurrentPolicy(tx,ctx,['paymentRecovery']))
+    const attempt=(await tx.payload.find({collection:'payment-attempts',where:{commandKey:{equals:booking.checkoutKey!}},limit:1,depth:0,req:tx.req,overrideAccess:false})).docs[0]
+    if(!attempt||booking.status!=='held'||attempt.escalatedAt||Date.parse(attempt.deadline)<=Date.parse(ctx.clock.now())||!attempt.providerCheckoutId||!attempt.checkoutUrl||attempt.providerEnvironment!==parseEnvironment(process.env).mayaEnvironment)throw new CheckoutResumeUnavailable()
+    if(attempt.resumeRequestedAt||attempt.state==='ready')return
+    if(!['pending','unknown'].includes(attempt.state)||attempt.resumeCount>=policy.maxBrowserResumes)throw new CheckoutResumeUnavailable()
+    const count=attempt.resumeCount+1
+    await tx.payload.update({collection:'payment-attempts',id:attempt.id,data:{resumeCount:count,resumeRequestedAt:ctx.clock.now()},req:tx.req,overrideAccess:false})
+    await enqueue(tx,{semanticKey:'reconcile-payment:'+attempt.id+':resume:'+count,kind:'reconcile-payment',payload:{attemptId:attempt.id},availableAt:ctx.clock.now()})
+    await appendAudit(tx,{action:'checkout:resume-requested',recordType:'payment-attempts',recordId:attempt.id,outcome:'success'})
   })
 }

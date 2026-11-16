@@ -1,7 +1,8 @@
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest'
+import {syntheticRecovery} from '../support/recovery-policy'
 import {configuredMayaGateway} from '@/integrations/maya/configured'
 import type {PolicySnapshot} from '@/domain/policy/types'
-function policy():PolicySnapshot{return {id:'11111111-1111-4111-8111-111111111111',revision:1,synthetic:true,approvedSections:['work','maya'],sections:{work:{leaseSeconds:30,maxAttempts:3,maxBatch:5,backoffSeconds:[5,30],runSeconds:10},maya:{environment:'sandbox',approvalReference:'synthetic-merchant-capability',checkoutEnabled:true,kountEnabled:false,voidEnabled:false,refundEnabled:false,partialRefunds:false,moneyMethods:[],maxAmountMinor:'1000000',timeoutMs:1000,checkoutMethods:['card'],methodConfigurationReference:'synthetic-merchant-method-evidence'}}}}
+function policy():PolicySnapshot{return {id:'11111111-1111-4111-8111-111111111111',revision:1,synthetic:true,approvedSections:['work','maya','checkout','paymentRecovery'],sections:{paymentRecovery:syntheticRecovery(),checkout:{payment:'full',holdMinutes:15,thirdPartyBookings:true},work:{leaseSeconds:30,maxAttempts:3,maxBatch:5,backoffSeconds:[5,30],runSeconds:10},maya:{environment:'sandbox',approvalReference:'synthetic-merchant-capability',checkoutEnabled:true,kountEnabled:false,voidEnabled:false,refundEnabled:false,partialRefunds:false,moneyMethods:[],maxAmountMinor:'1000000',timeoutMs:1000,checkoutMethods:['card'],methodConfigurationReference:'synthetic-merchant-method-evidence'}}}}
 beforeEach(()=>{for(const [key,value] of Object.entries({APP_ENV:'test',APP_URL:'https://acornelia.example.test',APP_OPERATION_MODE:'normal',MAYA_ENVIRONMENT:'sandbox',MAYA_PUBLIC_KEY:'pk-synthetic-config-key',MAYA_SECRET_KEY:'sk-synthetic-config-key'}))vi.stubEnv(key,value)})
 afterEach(()=>vi.unstubAllEnvs())
 describe('environment-configured Maya gateway',()=>{
@@ -21,4 +22,13 @@ describe('environment-configured Maya gateway',()=>{
     vi.stubEnv('MAYA_ENVIRONMENT','sandbox');vi.stubEnv('APP_OPERATION_MODE','quarantine');expect(configuredMayaGateway(policy())).toBeNull()
     vi.stubEnv('APP_OPERATION_MODE','normal');const invalid=policy();invalid.sections.work={};expect(configuredMayaGateway(invalid)).toBeNull()
   })
+})
+
+it('keeps authenticated reads configured while new checkout is paused or timing approval is missing',()=>{
+  const paused=policy();(paused.sections.maya as {checkoutEnabled:boolean}).checkoutEnabled=false
+  expect(configuredMayaGateway(paused)).toBeNull()
+  expect(configuredMayaGateway(paused,{requireCheckout:false})).not.toBeNull()
+  const missing=policy();missing.approvedSections=missing.approvedSections.filter(value=>value!=='paymentRecovery')
+  expect(configuredMayaGateway(missing)).toBeNull()
+  expect(configuredMayaGateway(missing,{requireCheckout:false})).not.toBeNull()
 })

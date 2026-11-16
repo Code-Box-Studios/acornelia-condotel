@@ -1,3 +1,4 @@
+import {syntheticRecovery} from '../support/recovery-policy'
 import '../support/env'
 import {randomUUID} from 'node:crypto'
 import {test,expect} from '@playwright/test'
@@ -10,6 +11,7 @@ import type {MayaGateway} from '@/integrations/maya/types'
 import {publishOffer} from '@/domain/offers/publication'
 import {syntheticOfferTerms} from '../support/offer-fixtures'
 import {signedObservation} from '../support/payment-observation'
+import {reconcileAttempt} from '@/domain/payments/reconcile'
 import {applyPaymentObservation} from '@/domain/payments/observe'
 import {mkdir} from 'node:fs/promises'
 let h:TestHarness
@@ -18,7 +20,7 @@ test.beforeAll(async()=>{h=await createHarness()})
 test.beforeEach(async()=>{await h.reset()})
 test.afterAll(async()=>{await h?.reset();await h?.close()})
 test('prepares a private guest booking once and refuses financial tampering or a foreign browser',async({request,playwright})=>{
-  const policy=await h.seed('policy-versions',{revision:1,active:true,approved:true,synthetic:true,approvalReference:'synthetic-checkout-browser',approvedSections:['stay','pricing','checkout','bookingTerms','checkoutStatus'],sections:{stay:{timezone:'Asia/Manila',minNights:1,maxNights:30,minLeadDays:0,maxAdvanceDays:730,sameDayCutoff:'18:00',turnover:'same-day'},pricing:{currency:'PHP',quoteMinutes:15,zeroTotal:'unavailable'},checkout:{payment:'full',holdMinutes:15,thirdPartyBookings:false},bookingTerms:{title:'Synthetic booking terms',text:'Local browser test policy only.'},checkoutStatus:{minutes:120,pollPerMinute:60}}})
+  const policy=await h.seed('policy-versions',{revision:1,active:true,approved:true,synthetic:true,approvalReference:'synthetic-checkout-browser',approvedSections:['stay','pricing','checkout','bookingTerms','checkoutStatus','paymentRecovery'],sections:{paymentRecovery:syntheticRecovery(),stay:{timezone:'Asia/Manila',minNights:1,maxNights:30,minLeadDays:0,maxAdvanceDays:730,sameDayCutoff:'18:00',turnover:'same-day'},pricing:{currency:'PHP',quoteMinutes:15,zeroTotal:'unavailable'},checkout:{payment:'full',holdMinutes:15,thirdPartyBookings:false},bookingTerms:{title:'Synthetic booking terms',text:'Local browser test policy only.'},checkoutStatus:{minutes:120,pollPerMinute:60}}})
   const room=await h.seed('room-types',{name:'Checkout browser fixture',slug:'checkout-browser',maxGuests:2,onSale:true,_status:'published'})
   await h.seed('rooms',{label:'PRIVATE-CHECKOUT-BROWSER',roomType:room.id,onSale:true})
   await h.seed('rate-plans',{roomType:room.id,policyVersion:policy.id,revision:1,rules:{currency:'PHP',nightMinor:'12345',weekendDays:[],weekendNightMinor:null,specialNights:[],includedAdults:2,extraAdultNightMinor:'0',childNightMinor:'0',fees:[],taxes:[],taxBasis:'room-and-fees-after-discount',rounding:'half-up-per-line'},validFrom:'2026-01-01T00:00:00Z',validUntil:'2028-12-31T00:00:00Z',approved:true,synthetic:true,approvalReference:'synthetic-checkout-browser-rate'})
@@ -35,7 +37,7 @@ test('prepares a private guest booking once and refuses financial tampering or a
   const outsider=await playwright.request.newContext({baseURL:origin})
   try{expect((await outsider.post('/api/booking/checkout',{headers,data:input})).status()).toBe(401)}finally{await outsider.dispose()}
   expect(await h.rows('bookings')).toHaveLength(1);expect((await h.rows('bookings'))[0].ownerCustomer).toBeNull()
-  expect(await h.rows('payment-attempts')).toHaveLength(1);expect(await h.rows('work-items')).toHaveLength(1)
+  expect(await h.rows('payment-attempts')).toHaveLength(1);expect(await h.rows('work-items')).toHaveLength(2)
 })
 
 
@@ -255,4 +257,33 @@ test('shows paid confirmation only after the original verified collection is app
   expect((await h.rows('payment-transactions'))[0].appliedRevision).toBe(1)
   const outsider=await playwright.request.newContext({baseURL:origin})
   try{expect((await outsider.get('/api/booking/status?bookingId='+fixture.receipt.bookingId)).status()).toBe(401)}finally{await outsider.dispose()}
+})
+
+test('requests a private check and resumes the same original checkout without creating another payment',async({page,playwright})=>{
+  h.clock.set(new Date().toISOString())
+  const f=await checkoutFixture(h),id=randomUUID(),attempt=(await h.rows('payment-attempts'))[0]
+  let creates=0
+  const pending={id,environment:'sandbox' as const,reference:attempt.merchantReference,amount:{minor:'20000',currency:'PHP'},status:'PENDING_TOKEN',method:'card',paidAt:null,canVoid:false,canRefund:false}
+  const unavailable=async()=>{throw new Error('Unexpected money operation')}
+  const gateway:MayaGateway={createCheckout:async()=>{creates++;return {kind:'created',environment:'sandbox',checkoutId:id,checkoutUrl:'https://payments-web-sandbox.paymaya.com/v2/checkout?id='+id}},retrievePayment:async()=>pending,findPaymentsByReference:async()=>[pending],voidPayment:unavailable,refundPayment:unavailable}
+  const lease=(await claimWork(f.worker,'create-checkout'))!;await beginWork(f.worker,lease)
+  await completeWork(f.worker,lease,await dispatchCheckout(f.worker,lease,gateway))
+  await page.context().addCookies([{name:'acornelia-quote-browser',value:f.ctx.browserKey!,url:origin,httpOnly:true,sameSite:'Lax'}])
+  expect((await page.request.post('/api/booking/checkout',{headers:{origin},data:f.input})).ok()).toBe(true)
+  const handoff=await page.request.post('/api/booking/handoff',{headers:{origin},form:{bookingId:f.receipt.bookingId},maxRedirects:0})
+  expect(handoff.status()).toBe(303)
+  const outsider=await playwright.request.newContext({baseURL:origin})
+  try{expect((await outsider.post('/api/booking/resume',{headers:{origin},data:{bookingId:f.receipt.bookingId}})).status()).toBe(401)}finally{await outsider.dispose()}
+  await page.goto('/book/payment?bookingId='+f.receipt.bookingId+'&outcome=cancel')
+  await expect(page.getByRole('heading',{name:'Checking payment.'})).toBeVisible()
+  const resume=page.getByRole('button',{name:'Check original payment link',exact:true})
+  await expect(resume).toBeVisible();await resume.focus();await page.keyboard.press('Enter')
+  await expect(page).toHaveURL(origin+'/book/payment?bookingId='+f.receipt.bookingId)
+  expect((await h.rows('payment-attempts'))[0].resumeCount).toBe(1)
+  h.clock.set(new Date().toISOString())
+  await reconcileAttempt({...f.worker,actor:{kind:'system',purpose:'payments'}},attempt.id,gateway)
+  const refresh=page.getByRole('button',{name:'Check again',exact:true});await expect(refresh).toBeEnabled();await refresh.click()
+  await expect(page.getByRole('heading',{name:'Your secure checkout is ready.'})).toBeVisible()
+  expect((await h.rows('payment-attempts'))[0].deadline).toBe(attempt.deadline)
+  expect(creates).toBe(1)
 })

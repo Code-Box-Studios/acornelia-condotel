@@ -1,3 +1,4 @@
+import {syntheticRecovery} from '../support/recovery-policy'
 import {randomUUID} from 'node:crypto'
 import {afterAll,afterEach,beforeAll,beforeEach,describe,expect,it,vi} from 'vitest'
 import {createHarness,type TestHarness} from '../support/harness'
@@ -18,7 +19,7 @@ describe('atomic checkout preparation',()=>{
   afterEach(()=>{vi.unstubAllEnvs();vi.restoreAllMocks()})
   afterAll(async()=>{await h?.close()})
   async function setup(options:{offer?:boolean;zero?:boolean;rooms?:number}={}){
-    const policy=await h.seed('policy-versions',{revision:1,active:true,approved:true,synthetic:true,approvalReference:'synthetic-checkout-review',approvedSections:['stay','pricing','offers','checkout','bookingTerms','checkoutStatus'],sections:{stay:{timezone:'Asia/Manila',minNights:1,maxNights:30,minLeadDays:0,maxAdvanceDays:730,sameDayCutoff:'18:00',turnover:'same-day'},pricing:{currency:'PHP',quoteMinutes:15,zeroTotal:options.zero?'confirm-without-payment':'unavailable'},offers:{enabled:true,accountScope:'all-customers',discountOrder:'before-fees-and-tax'},checkout:{payment:'full',holdMinutes:15,thirdPartyBookings:true},bookingTerms:{title:'Synthetic booking terms',text:'Local testing policy only. Full payment confirms the accepted stay.'},checkoutStatus:{minutes:120,pollPerMinute:60}}})
+    const policy=await h.seed('policy-versions',{revision:1,active:true,approved:true,synthetic:true,approvalReference:'synthetic-checkout-review',approvedSections:['stay','pricing','offers','checkout','bookingTerms','checkoutStatus','paymentRecovery'],sections:{paymentRecovery:syntheticRecovery(),stay:{timezone:'Asia/Manila',minNights:1,maxNights:30,minLeadDays:0,maxAdvanceDays:730,sameDayCutoff:'18:00',turnover:'same-day'},pricing:{currency:'PHP',quoteMinutes:15,zeroTotal:options.zero?'confirm-without-payment':'unavailable'},offers:{enabled:true,accountScope:'all-customers',discountOrder:'before-fees-and-tax'},checkout:{payment:'full',holdMinutes:15,thirdPartyBookings:true},bookingTerms:{title:'Synthetic booking terms',text:'Local testing policy only. Full payment confirms the accepted stay.'},checkoutStatus:{minutes:120,pollPerMinute:60}}})
     const type=await h.seed('room-types',{name:'Checkout room fixture',slug:'checkout-room',maxGuests:2,onSale:true,_status:'published'})
     for(let n=0;n<(options.rooms??1);n++)await h.seed('rooms',{label:'PRIVATE-CHECKOUT-'+n,roomType:type.id,onSale:true})
     await h.seed('rate-plans',{roomType:type.id,policyVersion:policy.id,revision:1,rules:{...rules,nightMinor:options.zero&&!options.offer?'0':'10000'},validFrom:'2026-11-15T00:00:00Z',validUntil:'2028-12-31T00:00:00Z',approved:true,synthetic:true,approvalReference:'synthetic-checkout-rate'})
@@ -64,7 +65,7 @@ describe('atomic checkout preparation',()=>{
     expect(booking.ownerCustomer).toBe(customer.id);expect(booking.stayingGuest).toBe('Staying guest')
     expect(attempt.amountMinor).toBe('18500');expect(attempt.merchantReference).toMatch(/^[A-Za-z0-9]{20,36}$/)
     expect(await h.rows('allocations')).toHaveLength(1);expect(await h.rows('offer-allocations')).toHaveLength(1)
-    expect((await h.rows('work-items'))[0].payload).toEqual({attemptId:attempt.id})
+    expect((await h.rows('work-items',{kind:{equals:'create-checkout'}}))[0].payload).toEqual({attemptId:attempt.id})
     expect(providerCreateCalls).toBe(0);expect(JSON.stringify(result)).not.toContain('contact@example.test')
     for(const field of ['amount_minor','currency','merchant_reference','accepted_context','revision','purpose','deadline']){
       const values:Record<string,unknown>={amount_minor:'1',currency:'USD',merchant_reference:'changed',accepted_context:'{}',revision:2,purpose:'change',deadline:'2026-11-15T05:00:00Z'}
@@ -101,7 +102,8 @@ describe('atomic checkout preparation',()=>{
     const a=await accepted(),b=await accepted(next),results=await Promise.all([startCheckout(ctx,a),startCheckout(next,b)])
     expect(results.filter(result=>result.state==='preparing')).toHaveLength(1)
     expect(results.filter(result=>result.state==='rejected')).toHaveLength(1)
-    for(const name of ['bookings','allocations','offer-allocations','payment-attempts','work-items'] as const)expect(await h.rows(name)).toHaveLength(1)
+    for(const name of ['bookings','allocations','offer-allocations','payment-attempts'] as const)expect(await h.rows(name)).toHaveLength(1)
+    expect(await h.rows('work-items')).toHaveLength(2)
   })
   it('refuses a fresh preparation after acceptance expiry but reuses the original uncertain attempt',async()=>{
     const {ctx,accepted}=await setup({rooms:2}),old=await accepted(),input=await accepted(),started=await startCheckout(ctx,input)

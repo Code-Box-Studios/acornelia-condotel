@@ -23,8 +23,9 @@ export async function releaseOffer(tx:DbTx,id:string,reason:OfferReleaseReason,n
     const money=await tx.payload.count({collection:'payment-transactions',where:{and:[{booking:{equals:bookingId}},{status:{in:['pending','authorized','collected']}}]},req:tx.req,overrideAccess:false})
     if(money.totalDocs||allocation.state==='consumed')throw new Error('Known unpaid closure is required before usage release')
     if(reason==='expired-unpaid'){
-      const future=await tx.payload.count({collection:'payment-attempts',where:{and:[{booking:{equals:bookingId}},{deadline:{greater_than:now}}]},req:tx.req,overrideAccess:false})
-      if(future.totalDocs)throw new Error('The accepted payment deadline has not expired')
+      const future=await tx.payload.find({collection:'payment-attempts',where:{and:[{booking:{equals:bookingId}},{deadline:{greater_than:now}}]},limit:1000,depth:0,req:tx.req,overrideAccess:false})
+      const provenClosed=future.docs.every(attempt=>{const proof=attempt.closeEvidence as {kind?:string}|null;return attempt.state==='closed'&&!!attempt.closedAt&&!!proof&&['provider-terminal','definite-refusal'].includes(proof.kind??'')})
+      if(future.hasNextPage||!provenClosed)throw new Error('The accepted payment deadline has not expired')
     }
   }
   await bumpOfferUsage(tx,offer.id,offer.usageRevision)
