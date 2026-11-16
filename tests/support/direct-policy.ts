@@ -1,0 +1,2 @@
+import type {DirectBookingPolicy} from '@/domain/bookings/direct-policy'
+export function syntheticDirectPolicy(overrides:Partial<DirectBookingPolicy>={}):DirectBookingPolicy{return {enabled:true,payment:'full-upfront',unpaid:'unavailable',roles:['staff','developer'],methods:['cash','bank-transfer'],currency:'PHP',maxAmountMinor:'1000000',evidence:'staff-attested-with-reference',maxBackdateDays:30,futureToleranceSeconds:300,...overrides}}

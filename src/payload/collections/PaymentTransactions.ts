@@ -12,6 +12,9 @@ export const PaymentTransactions: CollectionConfig={
     select('environment',['sandbox','production','offline']),...moneyFields,
     {name:'appliedRevision',type:'number',min:1},date('collectedAt',false),date('lastObservedAt',false),
     {name:'providerStatus',type:'text'},
+    {name:'offlineEvidence',type:'json'},
+    {name:'offlineReceiptKey',type:'text',unique:true},
+    {name:'recordedByStaff',type:'relationship',relationTo:'staff-users'},
     select('status',['pending','authorized','collected','failed','voided'],'pending'),
   ],
 }

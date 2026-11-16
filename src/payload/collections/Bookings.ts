@@ -12,6 +12,7 @@ export const Bookings: CollectionConfig={
     {name:'revision',type:'number',required:true,defaultValue:1,min:1},
     date('arrival'),date('departure'),json('acceptedQuote'),json('contact'),
     {name:'stayingGuest',type:'text'},
+    {name:'directContext',type:'json'},
     {name:'source',type:'select',required:true,options:['website','phone','walk-in'],defaultValue:'website'},
   ],
 }

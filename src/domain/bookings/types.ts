@@ -1,5 +1,8 @@
 import type {Money} from '@/domain/shared/types'
 export type CheckoutInput={commandKey:string;quoteId:string;version:number;contact:{name:string;email:string;phone:string;note?:string};stayingGuest?:string}
+export type OfflineReceipt={method:'cash'|'bank-transfer';receiptReference:string;evidenceReference:string;amount:Money;receivedAt?:string}
+export type OfflineCollectionEvidence=OfflineReceipt&{bookingId:string;expectedRevision:number}
+export type DirectBookingInput={commandKey:string;quoteId:string;version:number;source:'phone'|'walk-in';contact:CheckoutInput['contact'];stayingGuest?:string;agreementReference:string;collection:OfflineReceipt|null}
 export type BookingTermsSnapshot={title:string;text:string;payment:'full';holdMinutes:number;thirdPartyBookings:boolean;timezone:string}
 export type CheckoutRejection='invalid-input'|'access-required'|'quote-unavailable'|'quote-expired'|'already-prepared'|'command-conflict'|'unavailable'|'offer-unavailable'|'configuration-unavailable'|'contact-not-allowed'|'hold-limit'
 export type CheckoutResult=

@@ -3,6 +3,9 @@ import {serverWrite} from '../access/internal'
 import {moneyFields} from '../fields/common'
 export const Quotes:CollectionConfig={slug:'quotes',admin:{hidden:true},access:{create:serverWrite,read:serverWrite,update:serverWrite,delete:()=>false},fields:[
   {name:'version',type:'number',required:true,min:1,defaultValue:1},
+  {name:'scope',type:'select',options:['website','staff-direct'],required:true,defaultValue:'website'},
+  {name:'issuerStaff',type:'relationship',relationTo:'staff-users'},
+  {name:'directCommandKey',type:'text',unique:true},
   {name:'issuerCustomer',type:'relationship',relationTo:'customers'},{name:'browserHash',type:'text',required:true},
   {name:'snapshot',type:'json',required:true},{name:'policySnapshot',type:'json',required:true},{name:'rateSnapshot',type:'json',required:true},
   {name:'policyVersion',type:'relationship',relationTo:'policy-versions',required:true},{name:'rateVersion',type:'relationship',relationTo:'rate-plans',required:true},{name:'offerVersion',type:'relationship',relationTo:'offer-versions'},

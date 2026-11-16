@@ -68,6 +68,7 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    'direct-command-closures': DirectCommandClosure;
     offers: Offer;
     'offer-versions': OfferVersion;
     'rate-plans': RatePlan;
@@ -104,6 +105,7 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    'direct-command-closures': DirectCommandClosuresSelect<false> | DirectCommandClosuresSelect<true>;
     offers: OffersSelect<false> | OffersSelect<true>;
     'offer-versions': OfferVersionsSelect<false> | OfferVersionsSelect<true>;
     'rate-plans': RatePlansSelect<false> | RatePlansSelect<true>;
@@ -200,28 +202,30 @@ export interface CustomerAuthOperations {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "offers".
+ * via the `definition` "direct-command-closures".
  */
-export interface Offer {
+export interface DirectCommandClosure {
   id: string;
-  name: string;
-  active: boolean;
-  currentVersion?: (string | null) | OfferVersion;
-  usageRevision: number;
+  commandKey: string;
+  quote: string | Quote;
+  staff: string | StaffUser;
+  closedAt: string;
   updatedAt: string;
   createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "offer-versions".
+ * via the `definition` "quotes".
  */
-export interface OfferVersion {
+export interface Quote {
   id: string;
-  offer: string | Offer;
-  policyVersion: string | PolicyVersion;
-  name: string;
-  revision: number;
-  terms:
+  version: number;
+  scope: 'website' | 'staff-direct';
+  issuerStaff?: (string | null) | StaffUser;
+  directCommandKey?: string | null;
+  issuerCustomer?: (string | null) | Customer;
+  browserHash: string;
+  snapshot:
     | {
         [k: string]: unknown;
       }
@@ -230,12 +234,104 @@ export interface OfferVersion {
     | number
     | boolean
     | null;
-  approved: boolean;
-  approvalReference?: string | null;
-  publishedAt: string;
-  synthetic: boolean;
+  policySnapshot:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  rateSnapshot:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  policyVersion: string | PolicyVersion;
+  rateVersion: string | RatePlan;
+  offerVersion?: (string | null) | OfferVersion;
+  amountMinor: string;
+  currency: string;
+  issuedAt: string;
+  expiresAt: string;
+  acceptedAt?: string | null;
+  acceptedBy?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  consumedByBooking?: (string | null) | Booking;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "staff-users".
+ */
+export interface StaffUser {
+  id: string;
+  deactivated?: boolean | null;
+  name: string;
+  role: 'staff' | 'developer';
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'staff-users';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customers".
+ */
+export interface Customer {
+  id: string;
+  securityRevision: number;
+  name: string;
+  deactivated?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
+  _verified?: boolean | null;
+  _verificationToken?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'customers';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -364,49 +460,15 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "quotes".
+ * via the `definition` "offer-versions".
  */
-export interface Quote {
+export interface OfferVersion {
   id: string;
-  version: number;
-  issuerCustomer?: (string | null) | Customer;
-  browserHash: string;
-  snapshot:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  policySnapshot:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  rateSnapshot:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
+  offer: string | Offer;
   policyVersion: string | PolicyVersion;
-  rateVersion: string | RatePlan;
-  offerVersion?: (string | null) | OfferVersion;
-  amountMinor: string;
-  currency: string;
-  issuedAt: string;
-  expiresAt: string;
-  acceptedAt?: string | null;
-  acceptedBy?:
+  name: string;
+  revision: number;
+  terms:
     | {
         [k: string]: unknown;
       }
@@ -415,40 +477,25 @@ export interface Quote {
     | number
     | boolean
     | null;
-  consumedByBooking?: (string | null) | Booking;
+  approved: boolean;
+  approvalReference?: string | null;
+  publishedAt: string;
+  synthetic: boolean;
   updatedAt: string;
   createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "customers".
+ * via the `definition` "offers".
  */
-export interface Customer {
+export interface Offer {
   id: string;
-  securityRevision: number;
   name: string;
-  deactivated?: boolean | null;
+  active: boolean;
+  currentVersion?: (string | null) | OfferVersion;
+  usageRevision: number;
   updatedAt: string;
   createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  resetPasswordRequestedAt?: string | null;
-  _verified?: boolean | null;
-  _verificationToken?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
-  password?: string | null;
-  collection: 'customers';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -486,6 +533,15 @@ export interface Booking {
     | boolean
     | null;
   stayingGuest?: string | null;
+  directContext?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   source: 'website' | 'phone' | 'walk-in';
   updatedAt: string;
   createdAt: string;
@@ -562,35 +618,6 @@ export interface BookingClaim {
   revokedAt?: string | null;
   updatedAt: string;
   createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "staff-users".
- */
-export interface StaffUser {
-  id: string;
-  deactivated?: boolean | null;
-  name: string;
-  role: 'staff' | 'developer';
-  updatedAt: string;
-  createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  resetPasswordRequestedAt?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
-  password?: string | null;
-  collection: 'staff-users';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -786,6 +813,17 @@ export interface PaymentTransaction {
   collectedAt?: string | null;
   lastObservedAt?: string | null;
   providerStatus?: string | null;
+  offlineEvidence?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  offlineReceiptKey?: string | null;
+  recordedByStaff?: (string | null) | StaffUser;
   status: 'pending' | 'authorized' | 'collected' | 'failed' | 'voided';
   updatedAt: string;
   createdAt: string;
@@ -980,6 +1018,10 @@ export interface PayloadLockedDocument {
   id: string;
   document?:
     | ({
+        relationTo: 'direct-command-closures';
+        value: string | DirectCommandClosure;
+      } | null)
+    | ({
         relationTo: 'offers';
         value: string | Offer;
       } | null)
@@ -1149,6 +1191,18 @@ export interface PayloadMigration {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "direct-command-closures_select".
+ */
+export interface DirectCommandClosuresSelect<T extends boolean = true> {
+  commandKey?: T;
+  quote?: T;
+  staff?: T;
+  closedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "offers_select".
  */
 export interface OffersSelect<T extends boolean = true> {
@@ -1199,6 +1253,9 @@ export interface RatePlansSelect<T extends boolean = true> {
  */
 export interface QuotesSelect<T extends boolean = true> {
   version?: T;
+  scope?: T;
+  issuerStaff?: T;
+  directCommandKey?: T;
   issuerCustomer?: T;
   browserHash?: T;
   snapshot?: T;
@@ -1547,6 +1604,7 @@ export interface BookingsSelect<T extends boolean = true> {
   acceptedQuote?: T;
   contact?: T;
   stayingGuest?: T;
+  directContext?: T;
   source?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1633,6 +1691,9 @@ export interface PaymentTransactionsSelect<T extends boolean = true> {
   collectedAt?: T;
   lastObservedAt?: T;
   providerStatus?: T;
+  offlineEvidence?: T;
+  offlineReceiptKey?: T;
+  recordedByStaff?: T;
   status?: T;
   updatedAt?: T;
   createdAt?: T;

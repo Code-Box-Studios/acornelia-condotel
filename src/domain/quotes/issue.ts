@@ -1,4 +1,5 @@
 import type {CommandContext} from '@/domain/db/types'
+import {randomUUID} from 'node:crypto'
 import {privateDigest} from '@/domain/security/private-state'
 import {appendAudit} from '@/domain/audit/append'
 import {requireCurrentPolicy} from '@/domain/policy/current'
@@ -12,6 +13,7 @@ import {calculatePrice,rateRulesSchema} from './calculate'
 import {pricingPolicySchema,quoteIdentity,quoteRequestSchema,quoteSnapshot} from './validation'
 import type {QuoteRequest,QuoteSnapshot} from './types'
 import {quoteBookingTerms} from '@/domain/bookings/validation'
+import {directStaffAllowed} from '@/domain/bookings/direct-policy'
 export async function quoteStay(ctx:CommandContext,input:QuoteRequest):Promise<QuoteSnapshot>{
   const request=quoteRequestSchema.parse(input),now=ctx.clock.now()
   return ctx.uow.run(ctx.actor,async tx=>{
@@ -37,7 +39,8 @@ export async function quoteStay(ctx:CommandContext,input:QuoteRequest):Promise<Q
     if(breakdown.total.minor==='0'&&pricing.zeroTotal!=='confirm-without-payment')throw new Error('Zero-total checkout is not approved')
     const expiresAt=new Date(Math.min(Date.parse(now)+pricing.quoteMinutes*60000,offerUntil??Infinity)).toISOString()
     const snapshot={...breakdown,version:1,stay,roomType:{id:type.id,name:plain(type.name)},policyVersionId:policy.id,policyRevision:policy.revision,rateVersionId:rate.id,offerVersionId,issuedAt:now,expiresAt,synthetic:!!(policy.synthetic||rate.synthetic||type.synthetic),terms:quoteBookingTerms(policy)}
-    const row=await tx.payload.create({collection:'quotes',data:{version:1,issuerCustomer:ctx.actor.kind==='customer'?ctx.actor.id:undefined,browserHash:privateDigest('quote-browser\0'+ctx.browserKey),snapshot,policySnapshot:policy,rateSnapshot:rules,policyVersion:policy.id,rateVersion:rate.id,offerVersion:offerVersionId,amountMinor:breakdown.total.minor,currency:breakdown.total.currency,issuedAt:now,expiresAt},req:tx.req,overrideAccess:false})
+    const direct=ctx.actor.kind==='staff'&&directStaffAllowed(ctx)
+    const row=await tx.payload.create({collection:'quotes',data:{version:1,scope:direct?'staff-direct':'website',directCommandKey:direct?randomUUID():undefined,issuerStaff:direct&&ctx.actor.kind==='staff'?ctx.actor.id:undefined,issuerCustomer:ctx.actor.kind==='customer'?ctx.actor.id:undefined,browserHash:privateDigest('quote-browser\0'+ctx.browserKey),snapshot,policySnapshot:policy,rateSnapshot:rules,policyVersion:policy.id,rateVersion:rate.id,offerVersion:offerVersionId,amountMinor:breakdown.total.minor,currency:breakdown.total.currency,issuedAt:now,expiresAt},req:tx.req,overrideAccess:false})
     await appendAudit(tx,{action:'quote:issued',recordType:'quotes',recordId:row.id,outcome:'success',safeChanges:{amountMinor:row.amountMinor,currency:row.currency,policyVersionId:policy.id,revision:policy.revision}})
     return quoteSnapshot(row)
   })

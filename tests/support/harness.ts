@@ -7,7 +7,7 @@ import type {Principal} from '@/domain/shared/types'
 import type {CommandContext} from '@/domain/db/types'
 import {syntheticPolicy} from './policies'
 import {ownedPostgresDriver} from './owned-pg'
-type SeedInput<C extends CollectionSlug>=C extends 'payment-attempts'?Omit<RequiredDataFromCollectionSlug<C>,'reconcileSequence'|'resumeCount'>&{reconcileSequence?:number;resumeCount?:number}:C extends 'customers'?Omit<RequiredDataFromCollectionSlug<C>,'securityRevision'>&{securityRevision?:number}:RequiredDataFromCollectionSlug<C>
+type SeedInput<C extends CollectionSlug>=C extends 'quotes'?Omit<RequiredDataFromCollectionSlug<C>,'scope'>&{scope?:'website'|'staff-direct'}:C extends 'payment-attempts'?Omit<RequiredDataFromCollectionSlug<C>,'reconcileSequence'|'resumeCount'>&{reconcileSequence?:number;resumeCount?:number}:C extends 'customers'?Omit<RequiredDataFromCollectionSlug<C>,'securityRevision'>&{securityRevision?:number}:RequiredDataFromCollectionSlug<C>
 export async function createHarness(options:{databaseUrl?:string;migrate?:boolean}={}){
   const value=options.databaseUrl||process.env.TEST_DATABASE_URL
   if(!value)throw new Error('An isolated TEST_DATABASE_URL is required')
