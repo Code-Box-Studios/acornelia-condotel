@@ -1,3 +1,4 @@
+import {closeUnpaidChange} from '@/domain/changes/close'
 import type {CommandContext,DbTx} from '@/domain/db/types'
 import type {PaymentAttempt} from '@/payload-types'
 import type {RecoveryPolicy} from './recovery-policy'
@@ -6,9 +7,10 @@ import {releaseOffer} from '@/domain/offers/release'
 import {relationshipId} from '@/features/customer/bookings'
 import {appendAudit} from '@/domain/audit/append'
 export type CloseEvidence={kind:'provider-terminal';paymentId:string;status:string;observedAt:string}|{kind:'never-dispatched'|'definite-refusal';observedAt:string}
-export function definiteNoCreation(attempt:PaymentAttempt){return attempt.createOutcome==='refused'&&!!attempt.createObservedAt&&['configuration','invalid-input','unsupported-method','provider-authentication','window-too-short'].includes(attempt.createRefusalCode??'')}
+export function definiteNoCreation(attempt:PaymentAttempt){return attempt.createOutcome==='refused'&&!!attempt.createObservedAt&&['configuration','invalid-input','unsupported-method','provider-authentication','window-too-short',...(attempt.purpose==='change'?['change-no-longer-payable','change-authority-removed','change-payment-unapproved']:[])].includes(attempt.createRefusalCode??'')}
 export async function closeUnpaidAttempt(tx:DbTx,ctx:CommandContext,input:PaymentAttempt,evidence:CloseEvidence,policy:RecoveryPolicy):Promise<boolean>{
   const now=ctx.clock.now(),attempt=await tx.payload.findByID({collection:'payment-attempts',id:input.id,depth:0,req:tx.req,overrideAccess:false}),bookingId=relationshipId(attempt.booking)!,booking=await tx.payload.findByID({collection:'bookings',id:bookingId,depth:0,req:tx.req,overrideAccess:false})
+  if(attempt.purpose==='change')return closeUnpaidChange(tx,ctx,attempt,evidence,policy,definiteNoCreation(attempt))
   if(attempt.state==='closed'&&attempt.closedAt&&booking.status==='expired')return true
   if(attempt.purpose!=='booking'||attempt.revision!==booking.revision||booking.status!=='held'||attempt.state==='succeeded')return false
   if(Date.parse(attempt.deadline)>Date.parse(now)&&(policy.terminalRelease==='at-deadline'||evidence.kind==='never-dispatched'))return false

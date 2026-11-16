@@ -1,3 +1,4 @@
+import {changePaymentContext} from '@/domain/changes/context'
 import {queueBookingConfirmation} from '@/email/storage'
 import {randomBytes} from 'node:crypto'
 import {isDeepStrictEqual} from 'node:util'
@@ -16,6 +17,7 @@ import {bumpOfferUsage,loadOfferVersion,offerUsage} from '@/domain/offers/storag
 import {appendAudit} from '@/domain/audit/append'
 const lateSchema=z.object({action:z.enum(['confirm-if-available','staff-review']),maxMinutes:z.number().int().min(1).max(10080)}).strict()
 export async function originalPaymentContext(tx:DbTx,booking:Booking,attempt:PaymentAttempt):Promise<AcceptedQuote>{
+  if(attempt.purpose==='change')return (await changePaymentContext(tx,booking,attempt)).quote
   const context=z.object({quote:z.unknown(),ownerCustomerId:z.uuid().nullable(),contact:z.unknown(),stayingGuest:z.string(),deadline:z.string(),purpose:z.literal('booking'),revision:z.number().int().positive()}).strict().parse(attempt.acceptedContext)
   const id=relationshipId(booking.checkoutQuote);if(!id)throw new Error('Missing accepted quote')
   const row=await tx.payload.findByID({collection:'quotes',id,depth:0,req:tx.req,overrideAccess:false}),quote=acceptedQuote(row)

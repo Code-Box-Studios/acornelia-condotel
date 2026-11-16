@@ -1,3 +1,5 @@
+import {currentStay} from '@/domain/changes/context'
+import {isDeepStrictEqual} from 'node:util'
 import {z} from 'zod'
 import type {CommandContext,DbTx} from '@/domain/db/types'
 import type {Booking} from '@/payload-types'
@@ -78,7 +80,7 @@ async function verifyAccess(tx:DbTx,ctx:CommandContext,capability:string){
   return booking
 }
 async function projection(tx:DbTx,ctx:CommandContext,booking:Booking):Promise<{status:CheckoutStatus;destination:string|null}>{
-  const quote=await originalQuote(tx,booking),total=quote.total
+  const original=await originalQuote(tx,booking),quote=booking.currentQuote?await currentStay(tx,booking):original,total=quote.total
   const attempts=(await tx.payload.find({collection:'payment-attempts',where:{commandKey:{equals:booking.checkoutKey!}},limit:2,depth:0,req:tx.req,overrideAccess:false})).docs
   if(attempts.length>1)throw new CheckoutAccessUnavailable()
   const attempt=attempts[0]
@@ -87,7 +89,8 @@ async function projection(tx:DbTx,ctx:CommandContext,booking:Booking):Promise<{s
   else if(booking.status==='confirmed'){
     const zero=total.minor==='0'&&pricingPolicySchema.parse(quote.policySnapshot.sections.pricing).zeroTotal==='confirm-without-payment'
     const money=zero?null:await tx.payload.find({collection:'payment-transactions',where:{and:[{booking:{equals:booking.id}},{status:{equals:'collected'}},{appliedRevision:{equals:booking.revision}},{amountMinor:{equals:total.minor}},{currency:{equals:total.currency}}]},limit:1,depth:0,req:tx.req,overrideAccess:false})
-    if(zero||money?.docs.length)state='confirmed'
+    const change=booking.currentQuote?(await tx.payload.find({collection:'booking-changes',where:{and:[{booking:{equals:booking.id}},{kind:{equals:'stay'}},{state:{equals:'completed'}},{targetRevision:{equals:booking.revision}}]},limit:1,depth:0,req:tx.req,overrideAccess:false})).docs[0]:null
+    if(zero||money?.docs.length||change&&relationshipId(change.quote)===quote.id&&isDeepStrictEqual(change.acceptedQuote,quote))state='confirmed'
   }else if(attempt?.state==='closed')state='closed'
   else if(attempt&&Date.parse(attempt.deadline)>Date.parse(ctx.clock.now())){
     if(attempt.state==='preparing')state='preparing'
@@ -95,7 +98,7 @@ async function projection(tx:DbTx,ctx:CommandContext,booking:Booking):Promise<{s
       try{destination=approvedCheckoutUrl(attempt.providerEnvironment,attempt.providerCheckoutId,attempt.checkoutUrl);state='ready'}catch{/* Keep checking an unverified provider association. */}
     }
   }
-  if(attempt&&(attempt.amountMinor!==total.minor||attempt.currency!==total.currency||relationshipId(attempt.booking)!==booking.id))throw new CheckoutAccessUnavailable()
+  if(attempt&&(attempt.amountMinor!==original.total.minor||attempt.currency!==original.total.currency||relationshipId(attempt.booking)!==booking.id))throw new CheckoutAccessUnavailable()
   let canRequestResume=false
   if(booking.status==='held'&&attempt&&['pending','unknown'].includes(attempt.state)&&attempt.providerCheckoutId&&attempt.checkoutUrl&&attempt.providerEnvironment===parseEnvironment(process.env).mayaEnvironment&&Date.parse(attempt.deadline)>Date.parse(ctx.clock.now())&&!attempt.escalatedAt&&!attempt.resumeRequestedAt){try{canRequestResume=attempt.resumeCount<recoveryPolicy(ctx.policy).maxBrowserResumes}catch{/* Resume requires current approved bounds. */}}
   return {status:{bookingId:booking.id,state,canPay:state==='ready'&&!!destination,canRequestResume,total:parseMoney(total),deadline:attempt?.deadline??null,code:state==='confirmed'?booking.code??null:null,roomName:quote.roomType.name,arrival:quote.stay.arrival,departure:quote.stay.departure,adults:quote.stay.occupancy.adults,children:quote.stay.occupancy.children,timezone:(quote.policySnapshot.sections.stay as {timezone:string}).timezone},destination}

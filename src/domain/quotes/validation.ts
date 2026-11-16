@@ -8,6 +8,7 @@ import {parseRuntimePolicy} from '@/domain/policy/parse'
 import {calculatePrice,rateRulesSchema} from './calculate'
 import type {QuoteSnapshot,AcceptedQuote} from './types'
 import {bookingTermsSnapshotSchema,quoteBookingTerms} from '@/domain/bookings/validation'
+import {changeStaffAllowed} from '@/domain/changes/policy'
 import {directStaffAllowed} from '@/domain/bookings/direct-policy'
 export const quoteRequestSchema=z.object({stay:z.object({roomTypeId:z.uuid(),arrival:z.string(),departure:z.string(),occupancy:z.object({adults:z.number().int().min(1).max(100),children:z.number().int().min(0).max(100)}).strict()}).strict(),offerVersionId:z.uuid().optional()}).strict()
 export const pricingPolicySchema=z.object({currency:z.literal('PHP'),quoteMinutes:z.number().int().min(1).max(60),zeroTotal:z.enum(['unavailable','confirm-without-payment'])}).strict()
@@ -15,8 +16,9 @@ const money=z.object({minor:z.string().regex(/^(0|[1-9]\d*)$/).max(60),currency:
 const snapshotSchema=z.object({version:z.number().int().positive(),stay:quoteRequestSchema.shape.stay,roomType:z.object({id:z.uuid(),name:z.string().max(200)}).strict(),policyVersionId:z.uuid(),policyRevision:z.number().int().positive(),rateVersionId:z.uuid(),offerVersionId:z.uuid().nullable(),issuedAt:z.iso.datetime(),expiresAt:z.iso.datetime(),synthetic:z.boolean(),terms:bookingTermsSnapshotSchema.optional(),components:z.array(z.object({kind:z.enum(['night','extra-adult','child','discount','fee','tax']),label:z.string().max(160),date:z.string().optional(),amount:money}).strict()).max(500),subtotal:money,discount:money,fees:money,taxes:money,total:money}).strict()
 export async function quoteIdentity(tx:DbTx,ctx:CommandContext,row?:Quote){
   if(!ctx.browserKey||!/^[A-Za-z0-9_-]{43}$/.test(ctx.browserKey))throw new Error('Quote browser access required')
-  if(ctx.actor.kind==='system'||ctx.actor.kind==='staff'&&ctx.actor.role!=='developer'&&!directStaffAllowed(ctx))throw new Error('Quote access denied')
+  if(ctx.actor.kind==='system'||ctx.actor.kind==='staff'&&ctx.actor.role!=='developer'&&!directStaffAllowed(ctx)&&!changeStaffAllowed(ctx))throw new Error('Quote access denied')
   if(row?.scope==='staff-direct'&&(ctx.actor.kind!=='staff'||relationshipId(row.issuerStaff)!==ctx.actor.id||!directStaffAllowed(ctx)))throw new Error('Staff quote access denied')
+  if(row?.scope==='staff-change'&&(ctx.actor.kind!=='staff'||relationshipId(row.issuerStaff)!==ctx.actor.id||!changeStaffAllowed(ctx)))throw new Error('Change quote access denied')
   if(ctx.actor.kind==='customer')await requireCustomer(tx)
   if(row&&(!matchesPrivateDigest('quote-browser\0'+ctx.browserKey,row.browserHash)||relationshipId(row.issuerCustomer)&&(ctx.actor.kind!=='customer'||relationshipId(row.issuerCustomer)!==ctx.actor.id)))throw new Error('Quote is unavailable')
 }

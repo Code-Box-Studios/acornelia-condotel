@@ -6,7 +6,7 @@ import {plain} from '@/content/public-property'
 import {validateStay,InventoryInputError} from './policy'
 import type {StayRequest,AvailableRoomType} from './types'
 
-export async function freePhysicalRooms(tx:DbTx,stay:StayRequest){
+export async function freePhysicalRooms(tx:DbTx,stay:StayRequest,excludeBookingId?:string){
   const conditions:Where[]=[{onSale:{equals:true}},{_status:{equals:'published'}},...(stay.roomTypeId?[{id:{equals:stay.roomTypeId}}]:[]),...(process.env.APP_ENV==='production'?[{synthetic:{equals:false}}]:[])]
   const types=await tx.payload.find({collection:'room-types',where:{and:conditions},draft:false,limit:1000,depth:0,req:tx.req,overrideAccess:true})
   if(types.hasNextPage)throw new Error('Inventory catalog requires operator review')
@@ -17,7 +17,7 @@ export async function freePhysicalRooms(tx:DbTx,stay:StayRequest){
   const rooms=await tx.payload.find({collection:'rooms',where:{and:[{onSale:{equals:true}},{roomType:{in:eligible.map(type=>type.id)}}]},limit:10000,sort:'id',depth:0,req:tx.req,overrideAccess:false})
   if(rooms.hasNextPage)throw new Error('Physical inventory requires operator review')
   if(!rooms.docs.length)return {types:eligible,rooms:[]}
-  const occupied=await tx.payload.find({collection:'allocations',where:{and:[{room:{in:rooms.docs.map(room=>room.id)}},{released:{equals:false}},{arrival:{less_than:dateToStorage(stay.departure)}},{departure:{greater_than:dateToStorage(stay.arrival)}}]},limit:10000,depth:0,req:tx.req,overrideAccess:false})
+  const occupied=await tx.payload.find({collection:'allocations',where:{and:[{room:{in:rooms.docs.map(room=>room.id)}},...(excludeBookingId?[{or:[{booking:{not_equals:excludeBookingId}},{booking:{exists:false}}]}]:[]),{released:{equals:false}},{arrival:{less_than:dateToStorage(stay.departure)}},{departure:{greater_than:dateToStorage(stay.arrival)}}]},limit:10000,depth:0,req:tx.req,overrideAccess:false})
   if(occupied.hasNextPage)throw new Error('Occupied inventory requires operator review')
   const unavailable=new Set(occupied.docs.map(allocation=>relationshipId(allocation.room)))
   return {types:eligible,rooms:rooms.docs.filter(room=>!unavailable.has(room.id))}

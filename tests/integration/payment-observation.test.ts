@@ -153,9 +153,9 @@ async function prepareAnother(f:Awaited<ReturnType<typeof setup>>,offerVersionId
   const attempt=(await h.rows('payment-attempts',{booking:{equals:receipt.bookingId}}))[0]
   return {...f,receipt,attempt,quote,input}
 }
-it('keeps superseded revisions closed and surfaces unknown statuses without inventing collection',async()=>{
+it('rejects direct revision edits and surfaces closed and unknown payment issues',async()=>{
   const f=await setup();await closeAndRelease(f)
-  await h.pool.query('UPDATE bookings SET revision=2 WHERE id=$1',[f.receipt.bookingId])
+  await expect(h.pool.query('UPDATE bookings SET revision=2 WHERE id=$1',[f.receipt.bookingId])).rejects.toThrow('A completed revision transition is required')
   expect((await applyPaymentObservation(f.ctx,await signedObservation(f.ctx,packet(f.attempt.merchantReference)))).state).toBe('issue')
   expect((await h.rows('bookings'))[0].status).toBe('expired')
   expect((await applyPaymentObservation(f.ctx,await signedObservation(f.ctx,packet(f.attempt.merchantReference,{status:'UNRECOGNIZED'})))).state).toBe('issue')

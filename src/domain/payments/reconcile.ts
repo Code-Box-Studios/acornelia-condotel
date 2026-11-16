@@ -77,7 +77,7 @@ async function apply(tx:DbTx,ctx:CommandContext,plan:Plan,inspection:Inspection)
     attempt=await tx.payload.update({collection:'payment-attempts',id:attempt.id,data:{resumeRequestedAt:null,...(mayResume?{state:'ready' as const}:{})},req:tx.req,overrideAccess:false})
     await appendAudit(tx,{action:mayResume?'checkout:resumed':'checkout:resume-declined',recordType:'payment-attempts',recordId:attempt.id,outcome:mayResume?'success':'refused',safeChanges:{reasonCode:mayResume?'original-unstarted-session':'provider-not-resumable'}})
   }
-  if(attempt.closedAt&&booking.status==='expired')return {...base,state:'closed'}
+  if(attempt.closedAt&&(booking.status==='expired'||attempt.purpose==='change'))return {...base,state:'closed'}
   return scheduleCheck(tx,ctx,plan,attempt,inspection,'checking')
 }
 

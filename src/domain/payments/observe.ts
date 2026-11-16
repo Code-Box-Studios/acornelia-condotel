@@ -1,3 +1,4 @@
+import {applyChangePaymentTx} from '@/domain/changes/payment'
 import {z} from 'zod'
 import type {CommandContext,DbTx} from '@/domain/db/types'
 import type {PaymentAttempt,PaymentTransaction} from '@/payload-types'
@@ -43,26 +44,34 @@ export async function applyPaymentObservationTx(tx:DbTx,ctx:CommandContext,obser
   else if(!collected&&!pending.has(inbox.providerStatus)&&!authorized.has(inbox.providerStatus)&&!failed.has(inbox.providerStatus)&&inbox.providerStatus!=='VOIDED')reason='unknown-provider-status'
   else if(collected){
     if(!attempt)reason='unmatched-reference'
+    else if(attempt.purpose==='change'){
+      const booking=await tx.payload.findByID({collection:'bookings',id:bookingId!,depth:0,req:tx.req,overrideAccess:false}),applied=await applyChangePaymentTx(tx,ctx,booking,attempt,payment,inbox)
+      if('reason' in applied)reason=applied.reason;else result={...result,state:applied.state}
+    }
     else{
       const booking=await tx.payload.findByID({collection:'bookings',id:bookingId!,depth:0,req:tx.req,overrideAccess:false})
-      let quote
-      try{quote=await originalPaymentContext(tx,booking,attempt)}catch{reason='accepted-context-mismatch'}
-      if(!reason&&quote){
-        const environment=(quote.policySnapshot.sections.maya as {environment?:string})?.environment
-        if(!quote.policySnapshot.approvedSections.includes('maya')||environment!==inbox.environment||parseEnvironment(process.env).mayaEnvironment!==inbox.environment||attempt.providerEnvironment&&attempt.providerEnvironment!==inbox.environment)reason='environment-mismatch'
-        else if(attempt.amountMinor!==inbox.amountMinor||attempt.currency!==inbox.currency)reason='money-mismatch'
-        else if(['cancelled','completed'].includes(booking.status))reason='closed-operation'
-        else if((await tx.payload.count({collection:'payment-inbox',where:{and:[{source:{equals:'retrieval'}},{environment:{equals:inbox.environment}},{providerPaymentId:{equals:inbox.providerPaymentId}},{providerStatus:{in:['VOIDED','REFUNDED']}}]},req:tx.req,overrideAccess:false})).totalDocs)reason='external-reversal'
-        else if(payment.appliedRevision===booking.revision&&relationshipId(payment.booking)===booking.id)result={...result,state:'recorded'}
-        else if(booking.status==='confirmed'||(await tx.payload.find({collection:'payment-transactions',where:{and:[{booking:{equals:booking.id}},{appliedRevision:{equals:booking.revision}}]},limit:1,depth:0,req:tx.req,overrideAccess:false})).docs.length)reason='duplicate-collection'
-        else{
-          const plan=await planConfirmation(tx,ctx,booking,attempt,quote,payment,inbox.providerPaidAt)
-          if(!plan.ok)reason=plan.reason
-          else{await confirmPayment(tx,ctx,booking,attempt,quote,payment,plan);result={...result,state:'confirmed'}}
-        }
+      if(payment.appliedRevision!=null&&payment.appliedRevision<booking.revision&&payment.appliedRevision===attempt.revision&&relationshipId(payment.booking)===booking.id&&relationshipId(payment.attempt)===attempt.id)result={...result,state:'recorded'}
+      else{
+        let quote
+        try{quote=await originalPaymentContext(tx,booking,attempt)}catch{reason='accepted-context-mismatch'}
+        if(!reason&&quote){
+          const environment=(quote.policySnapshot.sections.maya as {environment?:string})?.environment
+          if(!quote.policySnapshot.approvedSections.includes('maya')||environment!==inbox.environment||parseEnvironment(process.env).mayaEnvironment!==inbox.environment||attempt.providerEnvironment&&attempt.providerEnvironment!==inbox.environment)reason='environment-mismatch'
+          else if(attempt.amountMinor!==inbox.amountMinor||attempt.currency!==inbox.currency)reason='money-mismatch'
+          else if(['cancelled','completed'].includes(booking.status))reason='closed-operation'
+          else if((await tx.payload.count({collection:'payment-inbox',where:{and:[{source:{equals:'retrieval'}},{environment:{equals:inbox.environment}},{providerPaymentId:{equals:inbox.providerPaymentId}},{providerStatus:{in:['VOIDED','REFUNDED']}}]},req:tx.req,overrideAccess:false})).totalDocs)reason='external-reversal'
+          else if(payment.appliedRevision===booking.revision&&relationshipId(payment.booking)===booking.id)result={...result,state:'recorded'}
+          else if(booking.status==='confirmed'||(await tx.payload.find({collection:'payment-transactions',where:{and:[{booking:{equals:booking.id}},{appliedRevision:{equals:booking.revision}}]},limit:1,depth:0,req:tx.req,overrideAccess:false})).docs.length)reason='duplicate-collection'
+          else{
+            const plan=await planConfirmation(tx,ctx,booking,attempt,quote,payment,inbox.providerPaidAt)
+            if(!plan.ok)reason=plan.reason
+            else{await confirmPayment(tx,ctx,booking,attempt,quote,payment,plan);result={...result,state:'confirmed'}}
+          }
       }
     }
   }
+  }
+
   if(reason){const issueId=await paymentIssue(tx,inbox,payment,attempt,reason,now);result={...result,state:'issue',issueId}}
   await tx.payload.update({collection:'payment-inbox',id:inbox.id,data:{state:reason?'exception':'processed',processedAt:now,reasonCode:reason??null},req:tx.req,overrideAccess:false})
   await appendAudit(tx,{action:'payment:observed',recordType:'payment-transactions',recordId:payment.id,outcome:reason?'unknown':'success',safeChanges:{status:payment.status,amountMinor:inbox.amountMinor,currency:inbox.currency,...(reason?{reasonCode:reason}:{})}})

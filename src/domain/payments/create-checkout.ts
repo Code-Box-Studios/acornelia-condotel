@@ -1,3 +1,4 @@
+import {prepareChangeCheckout,changeStillPayable} from '@/domain/changes/dispatch'
 import type {CommandContext} from '@/domain/db/types'
 import type {WorkLease,WorkResult} from '@/domain/work/types'
 import type {MayaGateway} from '@/integrations/maya/types'
@@ -21,6 +22,7 @@ export async function dispatchCheckout(ctx:CommandContext,lease:WorkLease,gatewa
     if(work.kind!=='create-checkout'||!work.dispatchStarted)throw new Error('Checkout dispatch requires its started work lease')
     const {attemptId}=z.object({attemptId:z.uuid()}).strict().parse(work.payload)
     const attempt=await tx.payload.findByID({collection:'payment-attempts',id:attemptId,depth:0,req:tx.req,overrideAccess:false})
+    if(attempt.purpose==='change')return prepareChangeCheckout(tx,ctx,attempt,limits.backoffSeconds[0])
     const bookingId=relationshipId(attempt.booking)!,booking=await tx.payload.findByID({collection:'bookings',id:bookingId,depth:0,req:tx.req,overrideAccess:false})
     const context=z.object({quote:z.unknown(),ownerCustomerId:z.uuid().nullable(),contact:z.unknown(),stayingGuest:z.string(),deadline:z.string(),purpose:z.literal('booking'),revision:z.number().int().positive()}).strict().parse(attempt.acceptedContext)
     const quoteId=relationshipId(booking.checkoutQuote)
@@ -41,8 +43,8 @@ export async function dispatchCheckout(ctx:CommandContext,lease:WorkLease,gatewa
   if(prepared.kind==='window-refused')return {state:'done',apply:async tx=>{
     const attempt=await tx.payload.findByID({collection:'payment-attempts',id:prepared.attemptId,depth:0,req:tx.req,overrideAccess:false})
     if(attempt.state!=='preparing')return
-    await tx.payload.update({collection:'payment-attempts',id:attempt.id,data:{state:'closed',createOutcome:'refused',createRefusalCode:'window-too-short',createObservedAt:ctx.clock.now()},req:tx.req,overrideAccess:false})
-    await appendAudit(tx,{action:'checkout:not-dispatched',recordType:'payment-attempts',recordId:attempt.id,outcome:'refused',safeChanges:{reasonCode:'window-too-short'}})
+    await tx.payload.update({collection:'payment-attempts',id:attempt.id,data:{state:'closed',createOutcome:'refused',createRefusalCode:'code' in prepared?prepared.code:'window-too-short',createObservedAt:ctx.clock.now()},req:tx.req,overrideAccess:false})
+    await appendAudit(tx,{action:'checkout:not-dispatched',recordType:'payment-attempts',recordId:attempt.id,outcome:'refused',safeChanges:{reasonCode:'code' in prepared?prepared.code:'window-too-short'}})
   }}
   assertWorker(ctx)
   if(signal?.aborted||Date.parse(lease.expiresAt)<=Date.parse(ctx.clock.now())||Date.parse(prepared.attempt.deadline)<=Date.parse(ctx.clock.now()))throw new Error('Checkout dispatch deadline passed')
@@ -53,7 +55,7 @@ export async function dispatchCheckout(ctx:CommandContext,lease:WorkLease,gatewa
     const booking=await tx.payload.findByID({collection:'bookings',id:prepared.attempt.bookingId,depth:0,req:tx.req,overrideAccess:false})
     const observations=await tx.payload.count({collection:'payment-transactions',where:{attempt:{equals:attempt.id}},req:tx.req,overrideAccess:false})
     const evidence=await tx.payload.count({collection:'payment-inbox',where:{and:[{merchantReference:{equals:attempt.merchantReference}},{environment:{equals:prepared.environment}},{source:{equals:'retrieval'}}]},req:tx.req,overrideAccess:false})
-    return attempt.state==='unknown'&&booking.status==='held'&&!observations.totalDocs&&!evidence.totalDocs
+    return attempt.state==='unknown'&&(attempt.purpose==='change'?await changeStillPayable(tx,booking,attempt):booking.status==='held')&&!observations.totalDocs&&!evidence.totalDocs
   })
   if(!stillOwned)return {state:'done'}
   assertWorker(ctx)
@@ -69,7 +71,7 @@ export async function dispatchCheckout(ctx:CommandContext,lease:WorkLease,gatewa
     const booking=await tx.payload.findByID({collection:'bookings',id:prepared.attempt.bookingId,depth:0,req:tx.req,overrideAccess:false})
     if(current.state!=='unknown')return
     const creation={createOutcome:outcome.kind,createObservedAt:ctx.clock.now()}
-    if(outcome.kind==='created')await tx.payload.update({collection:'payment-attempts',id:current.id,data:{...creation,providerCheckoutId:outcome.checkoutId,providerEnvironment:outcome.environment,checkoutUrl:outcome.checkoutUrl,state:booking.status==='held'&&Date.parse(current.deadline)>Date.parse(ctx.clock.now())?'ready':'unknown'},req:tx.req,overrideAccess:false})
+    if(outcome.kind==='created')await tx.payload.update({collection:'payment-attempts',id:current.id,data:{...creation,providerCheckoutId:outcome.checkoutId,providerEnvironment:outcome.environment,checkoutUrl:outcome.checkoutUrl,state:(current.purpose==='change'?await changeStillPayable(tx,booking,current):booking.status==='held')&&Date.parse(current.deadline)>Date.parse(ctx.clock.now())?'ready':'unknown'},req:tx.req,overrideAccess:false})
     if(outcome.kind==='refused')await tx.payload.update({collection:'payment-attempts',id:current.id,data:{...creation,state:'closed',createRefusalCode:outcome.reason},req:tx.req,overrideAccess:false})
     if(outcome.kind==='unknown')await tx.payload.update({collection:'payment-attempts',id:current.id,data:creation,req:tx.req,overrideAccess:false})
     await appendAudit(tx,{action:'checkout:dispatch-result',recordType:'payment-attempts',recordId:current.id,outcome:outcome.kind==='created'?'success':outcome.kind==='unknown'?'unknown':'refused',safeChanges:{state:outcome.kind==='created'?'ready':outcome.kind==='unknown'?'unknown':'closed'}})

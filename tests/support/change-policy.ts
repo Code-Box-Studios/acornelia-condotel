@@ -1,0 +1,2 @@
+import type {StayChangePolicy} from '@/domain/changes/types'
+export function syntheticChangePolicy(overrides:Partial<StayChangePolicy>={}):StayChangePolicy{return {enabled:true,roles:['staff','developer'],minHoursBeforeArrival:0,offerChanges:'unavailable',paymentMinutes:15,cancellation:{enabled:true,roles:['staff','developer'],minHoursBeforeArrival:0,refund:'separate-authorization',offerUsage:'retain'},...overrides}}

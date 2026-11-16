@@ -10,7 +10,7 @@ export const Bookings: CollectionConfig={
     {name:'checkoutQuote',type:'relationship',relationTo:'quotes',index:true},date('preparedAt',false),
     select('status',['held','confirmed','cancelled','completed','expired'],'held'),
     {name:'revision',type:'number',required:true,defaultValue:1,min:1},
-    date('arrival'),date('departure'),json('acceptedQuote'),json('contact'),
+    {name:'currentQuote',type:'relationship',relationTo:'quotes',index:true},date('arrival'),date('departure'),json('acceptedQuote'),json('contact'),
     {name:'stayingGuest',type:'text'},
     {name:'directContext',type:'json'},
     {name:'source',type:'select',required:true,options:['website','phone','walk-in'],defaultValue:'website'},

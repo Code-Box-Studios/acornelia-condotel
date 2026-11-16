@@ -38,12 +38,15 @@ export async function allocate(tx:DbTx,request:AllocationRequest):Promise<Alloca
   catch(error){if(sqlCode(error)==='23P01')throw new InventoryConflict();throw error}
 }
 /** Internal transition helper. Callers must update the booking/block state in the same transaction. */
-export async function release(tx:DbTx,id:string):Promise<void>{
+export async function release(tx:DbTx,id:string,transition?:{cancellationId:string}):Promise<void>{
   trusted(tx);z.uuid().parse(id)
   const allocation=await tx.payload.findByID({collection:'allocations',id,depth:0,req:tx.req,overrideAccess:false})
   if(allocation.released)return
   if(tx.actor.kind!=='staff'&&tx.actor.kind!=='system')throw new Error('Inventory release requires an authorized transition')
-  if(tx.actor.kind==='staff'&&tx.actor.role!=='developer')throw new Error('Inventory release requires an authorized operator')
+  if(tx.actor.kind==='staff'&&tx.actor.role!=='developer'){
+    const cancellation=transition?await tx.payload.findByID({collection:'booking-changes',id:transition.cancellationId,depth:0,req:tx.req,overrideAccess:false}):null
+    if(!cancellation||cancellation.kind!=='cancellation'||cancellation.state!=='completed'||relationshipId(cancellation.staff)!==tx.actor.id||allocation.purpose!=='booking'||relationshipId(cancellation.booking)!==relationshipId(allocation.booking))throw new Error('Inventory release requires an authorized operator')
+  }
   if(allocation.purpose!=='block'){
     const bookingId=relationshipId(allocation.booking)
     if(!bookingId)throw new Error('Booking allocation is missing its booking')

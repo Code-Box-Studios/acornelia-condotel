@@ -68,6 +68,7 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    'booking-changes': BookingChange;
     'direct-command-closures': DirectCommandClosure;
     offers: Offer;
     'offer-versions': OfferVersion;
@@ -105,6 +106,7 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    'booking-changes': BookingChangesSelect<false> | BookingChangesSelect<true>;
     'direct-command-closures': DirectCommandClosuresSelect<false> | DirectCommandClosuresSelect<true>;
     offers: OffersSelect<false> | OffersSelect<true>;
     'offer-versions': OfferVersionsSelect<false> | OfferVersionsSelect<true>;
@@ -202,16 +204,137 @@ export interface CustomerAuthOperations {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "direct-command-closures".
+ * via the `definition` "booking-changes".
  */
-export interface DirectCommandClosure {
+export interface BookingChange {
   id: string;
   commandKey: string;
-  quote: string | Quote;
+  fingerprint: string;
+  booking: string | Booking;
   staff: string | StaffUser;
-  closedAt: string;
+  kind: 'stay' | 'cancellation';
+  state: 'awaiting-payment' | 'completed' | 'failed' | 'abandoned';
+  baseRevision: number;
+  targetRevision: number;
+  quote?: (string | null) | Quote;
+  paymentAttempt?: (string | null) | PaymentAttempt;
+  originalQuote:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  acceptedQuote:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  originalAllocation:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  deltaMinor: string;
+  currency: string;
+  agreementReference: string;
+  reason: string;
+  completedAt?: string | null;
+  abandonedAt?: string | null;
+  reasonCode?: string | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "bookings".
+ */
+export interface Booking {
+  id: string;
+  code?: string | null;
+  ownerCustomer?: (string | null) | Customer;
+  checkoutKey?: string | null;
+  checkoutFingerprint?: string | null;
+  checkoutBrowserHash?: string | null;
+  checkoutQuote?: (string | null) | Quote;
+  preparedAt?: string | null;
+  status: 'held' | 'confirmed' | 'cancelled' | 'completed' | 'expired';
+  revision: number;
+  currentQuote?: (string | null) | Quote;
+  arrival: string;
+  departure: string;
+  acceptedQuote:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  contact:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  stayingGuest?: string | null;
+  directContext?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  source: 'website' | 'phone' | 'walk-in';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customers".
+ */
+export interface Customer {
+  id: string;
+  securityRevision: number;
+  name: string;
+  deactivated?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
+  _verified?: boolean | null;
+  _verificationToken?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'customers';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -220,7 +343,16 @@ export interface DirectCommandClosure {
 export interface Quote {
   id: string;
   version: number;
-  scope: 'website' | 'staff-direct';
+  scope: 'website' | 'staff-direct' | 'staff-change';
+  changeContext?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   issuerStaff?: (string | null) | StaffUser;
   directCommandKey?: string | null;
   issuerCustomer?: (string | null) | Customer;
@@ -301,37 +433,6 @@ export interface StaffUser {
     | null;
   password?: string | null;
   collection: 'staff-users';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "customers".
- */
-export interface Customer {
-  id: string;
-  securityRevision: number;
-  name: string;
-  deactivated?: boolean | null;
-  updatedAt: string;
-  createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  resetPasswordRequestedAt?: string | null;
-  _verified?: boolean | null;
-  _verificationToken?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
-  sessions?:
-    | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
-      }[]
-    | null;
-  password?: string | null;
-  collection: 'customers';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -499,22 +600,33 @@ export interface Offer {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "bookings".
+ * via the `definition` "payment-attempts".
  */
-export interface Booking {
+export interface PaymentAttempt {
   id: string;
-  code?: string | null;
-  ownerCustomer?: (string | null) | Customer;
-  checkoutKey?: string | null;
-  checkoutFingerprint?: string | null;
-  checkoutBrowserHash?: string | null;
-  checkoutQuote?: (string | null) | Quote;
-  preparedAt?: string | null;
-  status: 'held' | 'confirmed' | 'cancelled' | 'completed' | 'expired';
+  booking: string | Booking;
+  merchantReference: string;
+  commandKey: string;
+  fingerprint: string;
+  amountMinor: string;
+  currency: string;
+  acceptedContext:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  purpose: 'booking' | 'change';
   revision: number;
-  arrival: string;
-  departure: string;
-  acceptedQuote:
+  state: 'preparing' | 'ready' | 'unknown' | 'pending' | 'succeeded' | 'closed';
+  createOutcome?: ('created' | 'refused' | 'unknown') | null;
+  createRefusalCode?: string | null;
+  createObservedAt?: string | null;
+  closedAt?: string | null;
+  closeEvidence?:
     | {
         [k: string]: unknown;
       }
@@ -523,26 +635,29 @@ export interface Booking {
     | number
     | boolean
     | null;
-  contact:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  stayingGuest?: string | null;
-  directContext?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  source: 'website' | 'phone' | 'walk-in';
+  lastReconciledAt?: string | null;
+  nextReconcileAt?: string | null;
+  escalatedAt?: string | null;
+  reconcileSequence: number;
+  resumeCount: number;
+  resumeRequestedAt?: string | null;
+  deadline: string;
+  checkoutUrl?: string | null;
+  providerCheckoutId?: string | null;
+  providerEnvironment?: ('sandbox' | 'production') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "direct-command-closures".
+ */
+export interface DirectCommandClosure {
+  id: string;
+  commandKey: string;
+  quote: string | Quote;
+  staff: string | StaffUser;
+  closedAt: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -743,56 +858,6 @@ export interface PaymentIssue {
   state: 'open' | 'resolved';
   resolvedAt?: string | null;
   resolutionCode?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "payment-attempts".
- */
-export interface PaymentAttempt {
-  id: string;
-  booking: string | Booking;
-  merchantReference: string;
-  commandKey: string;
-  fingerprint: string;
-  amountMinor: string;
-  currency: string;
-  acceptedContext:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  purpose: 'booking' | 'change';
-  revision: number;
-  state: 'preparing' | 'ready' | 'unknown' | 'pending' | 'succeeded' | 'closed';
-  createOutcome?: ('created' | 'refused' | 'unknown') | null;
-  createRefusalCode?: string | null;
-  createObservedAt?: string | null;
-  closedAt?: string | null;
-  closeEvidence?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  lastReconciledAt?: string | null;
-  nextReconcileAt?: string | null;
-  escalatedAt?: string | null;
-  reconcileSequence: number;
-  resumeCount: number;
-  resumeRequestedAt?: string | null;
-  deadline: string;
-  checkoutUrl?: string | null;
-  providerCheckoutId?: string | null;
-  providerEnvironment?: ('sandbox' | 'production') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1018,6 +1083,10 @@ export interface PayloadLockedDocument {
   id: string;
   document?:
     | ({
+        relationTo: 'booking-changes';
+        value: string | BookingChange;
+      } | null)
+    | ({
         relationTo: 'direct-command-closures';
         value: string | DirectCommandClosure;
       } | null)
@@ -1191,6 +1260,34 @@ export interface PayloadMigration {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "booking-changes_select".
+ */
+export interface BookingChangesSelect<T extends boolean = true> {
+  commandKey?: T;
+  fingerprint?: T;
+  booking?: T;
+  staff?: T;
+  kind?: T;
+  state?: T;
+  baseRevision?: T;
+  targetRevision?: T;
+  quote?: T;
+  paymentAttempt?: T;
+  originalQuote?: T;
+  acceptedQuote?: T;
+  originalAllocation?: T;
+  deltaMinor?: T;
+  currency?: T;
+  agreementReference?: T;
+  reason?: T;
+  completedAt?: T;
+  abandonedAt?: T;
+  reasonCode?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "direct-command-closures_select".
  */
 export interface DirectCommandClosuresSelect<T extends boolean = true> {
@@ -1254,6 +1351,7 @@ export interface RatePlansSelect<T extends boolean = true> {
 export interface QuotesSelect<T extends boolean = true> {
   version?: T;
   scope?: T;
+  changeContext?: T;
   issuerStaff?: T;
   directCommandKey?: T;
   issuerCustomer?: T;
@@ -1599,6 +1697,7 @@ export interface BookingsSelect<T extends boolean = true> {
   preparedAt?: T;
   status?: T;
   revision?: T;
+  currentQuote?: T;
   arrival?: T;
   departure?: T;
   acceptedQuote?: T;

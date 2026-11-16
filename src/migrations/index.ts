@@ -1,4 +1,3 @@
-import * as migration_20261116_023100_direct_command_required from './20261116_023100_direct_command_required';
 import * as migration_20261114_030322_foundation from './20261114_030322_foundation';
 import * as migration_20261114_030640_reservation_guards from './20261114_030640_reservation_guards';
 import * as migration_20261114_032157_customer_identities from './20261114_032157_customer_identities';
@@ -23,6 +22,8 @@ import * as migration_20261115_234357_payment_recovery from './20261115_234357_p
 import * as migration_20261116_004618_transactional_email from './20261116_004618_transactional_email';
 import * as migration_20261116_015111_direct_bookings from './20261116_015111_direct_bookings';
 import * as migration_20261116_021800_direct_entry_recovery from './20261116_021800_direct_entry_recovery';
+import * as migration_20261116_023100_direct_command_required from './20261116_023100_direct_command_required';
+import * as migration_20261116_025903_booking_changes from './20261116_025903_booking_changes';
 
 export const migrations = [
   {
@@ -143,7 +144,16 @@ export const migrations = [
   {
     up: migration_20261116_021800_direct_entry_recovery.up,
     down: migration_20261116_021800_direct_entry_recovery.down,
-    name: '20261116_021800_direct_entry_recovery'
+    name: '20261116_021800_direct_entry_recovery',
   },
-  {up:migration_20261116_023100_direct_command_required.up,down:migration_20261116_023100_direct_command_required.down,name:'20261116_023100_direct_command_required'},
+  {
+    up: migration_20261116_023100_direct_command_required.up,
+    down: migration_20261116_023100_direct_command_required.down,
+    name: '20261116_023100_direct_command_required',
+  },
+  {
+    up: migration_20261116_025903_booking_changes.up,
+    down: migration_20261116_025903_booking_changes.down,
+    name: '20261116_025903_booking_changes'
+  },
 ];

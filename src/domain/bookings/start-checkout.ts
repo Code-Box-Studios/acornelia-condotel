@@ -29,7 +29,7 @@ async function existingResult(tx:DbTx,ctx:CommandContext,booking:Booking,fingerp
   if(rows.docs.length>1)throw new Error('Checkout requires operator review')
   if(['cancelled','expired','completed'].includes(booking.status))throw new CheckoutRefused('already-prepared')
   const attempt=rows.docs[0],snapshot=booking.acceptedQuote as {total?:unknown},total=parseMoney(snapshot.total)
-  if(booking.status==='confirmed')return {state:'confirmed',bookingId:booking.id,attemptId:attempt?.id??null,revision:attempt?.revision??booking.revision,deadline:attempt?.deadline??null,total}
+  if(booking.status==='confirmed')return {state:'confirmed',bookingId:booking.id,attemptId:attempt?.id??null,revision:booking.revision,deadline:attempt?.deadline??null,total}
   if(!attempt||relationshipId(attempt.booking)!==booking.id)throw new Error('Prepared checkout has no matching attempt')
   if(attempt.state==='closed')throw new CheckoutRefused('already-prepared')
   // A retry reads the frozen original. Public quote/offer expiry never edits it.
