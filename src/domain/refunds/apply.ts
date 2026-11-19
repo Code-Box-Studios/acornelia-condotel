@@ -33,6 +33,18 @@ async function applyBoundReceipt(tx:DbTx,ctx:CommandContext,evidence:RefundEvide
   await issue(tx,ctx,evidence,bookingId,'refund-evidence-identity-conflict')
   await tx.payload.update({collection:'refund-evidence',id:evidence.id,data:{state:'exception',processedAt:ctx.clock.now(),reasonCode:'refund-evidence-identity-conflict'},req:tx.req,overrideAccess:false});return null
  }
+ if(!known&&positive&&target.method==='void'){
+  // A merchant root read may already have imported this void without an operation ID; count it once.
+  const root=(await tx.payload.find({collection:'refund-operations',where:{and:[{payment:{equals:relationshipId(target.payment)}},{origin:{equals:'provider'}},{method:{equals:'void'}},{state:{equals:'completed'}}]},limit:1,depth:0,req:tx.req,overrideAccess:false})).docs[0]
+  if(root){
+   const claimed=await tx.payload.count({collection:'refund-operations',where:{settledByRefund:{equals:root.id}},req:tx.req,overrideAccess:false})
+   if(!claimed.totalDocs&&root.actualAmountMinor===target.amountMinor&&root.currency===target.currency){
+    const settled=await tx.payload.update({collection:'refund-operations',id:target.id,data:{state:'satisfied',settledByRefund:root.id,observedAt:evidence.observedAt,lastEvidence:evidence.id,resultProof:{...proof,settledBy:root.id}},req:tx.req,overrideAccess:false})
+    return processed(tx,ctx,evidence,settled,'success')
+   }
+   await issue(tx,ctx,evidence,bookingId,'refund-evidence-identity-conflict')
+  }
+ }
  const state=positive?'completed':failed?'failed':'uncertain'
  const updated=await tx.payload.update({collection:'refund-operations',id:target.id,data:{state,providerEnvironment:evidence.environment==='offline'?undefined:evidence.environment,providerOperationId:evidence.providerOperationId,providerStatus:evidence.providerStatus,observedAt:evidence.observedAt,lastEvidence:evidence.id,resultProof:proof,reasonCode:failed?'provider-failed':positive?null:'provider-outcome-pending',...(positive?{actualAmountMinor:evidence.amountMinor,actualCurrency:evidence.currency,completedAt:ctx.clock.now()}:{})},req:tx.req,overrideAccess:false})
  return processed(tx,ctx,evidence,updated,outcome)

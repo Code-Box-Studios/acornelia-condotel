@@ -28,6 +28,8 @@ Staff sign in with their staff account at `/admin/login`, then open `/staff`. Gu
 
 **Check-out.** Press **Check out** after check-in. This marks the booking completed. It does not release or refund anything.
 
+**Cancelling.** Open **Cancel this booking**, enter where the guest's agreement is recorded and the reason, then press **Cancel booking**. This releases the room. Any refund is requested separately. Date or room changes cannot be made from the workspace yet; ask the developer.
+
 **No-show.** **Record no-show** appears from the approved hour on the arrival date (the current candidate setting is 20:00 property time). Recording a no-show does not free the room or return money. If the guest arrives late, you can still check them in.
 
 **If a button is missing**, the booking is not in a state that allows that action today. Reload the page; another staff member may have changed the booking. If the page says the booking changed, reload before trying again.
@@ -40,9 +42,13 @@ Internal notes are visible to staff only. They are never shown to guests and the
 
 **Payment issues** are money events the system could not apply automatically, such as an extra or late payment. Choose the resolution that matches what happened and enter where the evidence is kept. Resolving an issue records a decision only. It never moves money.
 
+**Check Maya first.** Before any refund of a Maya payment, including a cash or bank-transfer reimbursement of one, press **Check Maya for refunds** on the booking page. This imports refunds someone made in the Maya dashboard, so the same money is never returned twice. The system refuses a refund if the last check is more than 15 minutes old (the candidate setting).
+
 **Requesting a refund.** On the booking page, open **Request a refund**. Choose the collection, amount, method and reason, and give the approval reference. The system refuses any amount above what is still refundable: money already returned and any refund still in progress are subtracted once. Maya voids are same-day and full-amount only. Maya refunds start the next day and end after 180 days.
 
-**Uncertain refunds.** If Maya did not answer clearly, the refund stays "uncertain" and its amount stays reserved. **Do not send another refund for the same money.** The system keeps checking Maya. While anyone works on this payment in the Maya dashboard, do not request another app refund for it. When a dashboard refund has been imported, a staff member who did not request the original refund can settle the uncertain request against it on the Payments page.
+**Uncertain refunds.** If Maya did not answer clearly, the refund stays "uncertain" and its amount stays reserved. **Do not send another refund for the same money.** The system keeps checking Maya. While anyone works on this payment in the Maya dashboard, do not request another app refund for it. After any dashboard action, press **Check Maya now** on the Payments page to import the result. Then a staff member who did not request the original refund can settle the uncertain request against it there.
+
+**Withdrawing a request.** A refund request that has not been sent to Maya, or a cash/bank reimbursement with no payout recorded, can be withdrawn. This releases the reserved amount. A request already sent cannot be withdrawn; its outcome must be checked.
 
 **Cash or bank-transfer reimbursements** need two people. The person who pays records the payout and its receipt reference. A different staff member then confirms or rejects the record. Until it is confirmed, the amount stays reserved. A receipt can be used for one reimbursement only.
 

@@ -10,7 +10,7 @@ export const PaymentTransactions: CollectionConfig={
     {name:'booking',type:'relationship',relationTo:'bookings',index:true},
     {name:'attempt',type:'relationship',relationTo:'payment-attempts',index:true},
     select('environment',['sandbox','production','offline']),...moneyFields,
-    {name:'appliedRevision',type:'number',min:1},date('collectedAt',false),date('lastObservedAt',false),
+    {name:'appliedRevision',type:'number',min:1},date('collectedAt',false),date('lastObservedAt',false),date('refundsCheckedAt',false),
     {name:'providerStatus',type:'text'},
     {name:'offlineEvidence',type:'json'},
     {name:'offlineReceiptKey',type:'text',unique:true},

@@ -22,3 +22,6 @@ export const serverWrite:Access=({req})=>Boolean(commandActor(req))
 export const staffRead:Access=({req})=>Boolean(commandActor(req))||activeStaff(req)
 export const developerRead:Access=({req})=>activeStaff(req)&&req.user?.collection==='staff-users'&&req.user.role==='developer'
 export const commandOnly={create:serverWrite,read:staffRead,update:serverWrite,delete:()=>false}
+/** Operational and money records: commands may read them; generated endpoints serve developers only. */
+export const commandOrDeveloperRead:Access=args=>Boolean(commandActor(args.req))||developerRead(args)
+export const commandDeveloperOnly={create:serverWrite,read:commandOrDeveloperRead,update:serverWrite,delete:()=>false}

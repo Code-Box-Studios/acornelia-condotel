@@ -8,7 +8,7 @@ import type {OperationsOverrides} from '../support/operations-policy'
 let h:TestHarness
 const origin='http://127.0.0.1:3043',password='Synthetic-front-desk-passphrase-946!'
 test.beforeAll(async()=>{h=await createHarness()});test.beforeEach(async()=>{await h.reset();h.clock.set(new Date().toISOString())});test.afterAll(async()=>{await h?.reset();await h?.close()})
-async function signedIn(page:Page,options:{role?:'staff'|'developer';operations?:OperationsOverrides;contactName?:string}={}){
+async function signedIn(page:Page,options:{role?:'staff'|'developer';operations?:OperationsOverrides;contactName?:string;changes?:boolean}={}){
  const f=await confirmedOperationsFixture(h,options)
  expect((await page.request.post('/api/staff-users/login',{headers:{origin},data:{email:f.staff.email,password}})).ok()).toBe(true)
  return f
@@ -85,4 +85,17 @@ test('closes an enquiry, shows stays on the calendar and keeps refund and block 
  for(const [path,data] of [['/api/operations/refunds',refund],['/api/operations/blocks',block],['/api/operations/stay',{}],['/api/operations/notes',{}],['/api/operations/issues',{}],['/api/operations/enquiries',{}]] as const)expect((await anonymous.post(path,{headers:{origin},data})).status()).toBe(403)
  await anonymous.dispose()
  expect(await h.rows('refund-operations')).toHaveLength(0);expect(await h.rows('room-blocks')).toHaveLength(0)
+})
+test('cancels a confirmed booking from the workspace with the guest agreement recorded',async({page})=>{
+ const f=await signedIn(page,{changes:true});await page.goto('/staff/bookings/'+f.booking.id)
+ await page.getByText('Cancel this booking').click()
+ await page.getByLabel('Guest agreement reference',{exact:true}).fill('synthetic-call-log-1');await page.getByLabel('Cancellation reason',{exact:true}).fill('Guest changed travel plans')
+ await page.getByRole('button',{name:'Cancel booking',exact:true}).click();await expect(page.getByRole('status')).toContainText('Booking cancelled')
+ expect((await h.rows('bookings',{id:{equals:f.booking.id}}))[0].status).toBe('cancelled')
+})
+test('keeps signed-in pages closed when the database generation does not match the external fence',async({page})=>{
+ const f=await signedIn(page,{role:'developer'})
+ await h.pool.query("INSERT INTO recovery_fences(generation,operator,authorized_at,permit) VALUES('e2e-restored-copy','e2e-probe',now(),'{}')")
+ for(const path of ['/admin','/staff','/account']){const response=await page.goto(path);expect(response!.status()).toBeGreaterThanOrEqual(500);await expect(page.locator('body')).not.toContainText(f.booking.code!)}
+ expect((await page.request.get('/api/operations/bookings?code='+f.booking.code,{headers:{origin}})).status()).toBe(503)
 })

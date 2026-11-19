@@ -7,6 +7,7 @@ import {reconcileAttempt} from '@/domain/payments/reconcile'
 import {reconcilePaymentRefunds} from '@/domain/refunds/reconcile'
 import {fenceFrom} from '@/config/operation-mode'
 import {markMailWorkFailure} from '@/email/work-state'
+import {enqueue} from '@/domain/work/enqueue'
 const nonRepeatable=['create-checkout','refund','email','enquiry'],mail=['email','enquiry']
 const random=()=>randomBytes(48).toString('base64url')
 async function all<T extends 'customers'|'staff-users'|'auth-tokens'|'booking-claims'|'booking-views'|'work-items'>(tx:DbTx,collection:T,where:object){
@@ -20,10 +21,18 @@ async function all<T extends 'customers'|'staff-users'|'auth-tokens'|'booking-cl
  * outstanding token, claim and private link is revoked. Unsent outbound work becomes uncertain
  * so it is reconciled or deliberately replayed instead of repeating an external effect.
  */
-export async function invalidateRestoredCapabilities(tx:DbTx,at:string){
+export async function invalidateRestoredCapabilities(tx:DbTx,at:string,operatorStaffId:string|null=null){
  const counts={accounts:0,tokens:0,claims:0,links:0,work:0}
- for(const collection of ['customers','staff-users'] as const)for(const row of await all(tx,collection,{}))
-  {await endAccountAccess(tx,collection,row.id,{password:random()});counts.accounts++}
+ // Restored roles, contacts and active flags may be stale: every account except the externally verified
+ // operator is held until staff confirm it against records outside the restored database.
+ for(const row of await all(tx,'customers',{})){
+  const hold=!row.deactivated&&!row.anonymizedAt
+  await endAccountAccess(tx,'customers',row.id,{password:random(),...(hold?{deactivated:true,recoveryHoldAt:at}:{})});counts.accounts++
+ }
+ for(const row of await all(tx,'staff-users',{})){
+  const hold=row.id!==operatorStaffId&&!row.deactivated
+  await endAccountAccess(tx,'staff-users',row.id,{password:random(),...(hold?{deactivated:true,recoveryHoldAt:at}:{})});counts.accounts++
+ }
  for(const row of await all(tx,'auth-tokens',{usedAt:{exists:false}})){await tx.payload.update({collection:'auth-tokens',id:row.id,data:{usedAt:at},req:tx.req,overrideAccess:true});counts.tokens++}
  for(const row of await all(tx,'booking-claims',{and:[{usedAt:{exists:false}},{revokedAt:{exists:false}}]})){await tx.payload.update({collection:'booking-claims',id:row.id,data:{revokedAt:at},req:tx.req,overrideAccess:true});counts.claims++}
  for(const row of await all(tx,'booking-views',{revokedAt:{exists:false}})){await tx.payload.update({collection:'booking-views',id:row.id,data:{revokedAt:at},req:tx.req,overrideAccess:true});counts.links++}
@@ -33,6 +42,14 @@ export async function invalidateRestoredCapabilities(tx:DbTx,at:string){
   const state=mail.includes(row.kind)?'failed' as const:'uncertain' as const
   await tx.payload.update({collection:'work-items',id:row.id,data:{state,leaseOwner:null,leaseExpires:null,lastError:'restored-before-reconciliation'},req:tx.req,overrideAccess:true})
   if(state==='failed')await markMailWorkFailure(tx,row,state)
+  if(row.kind==='refund'){
+   // The lost timeline may have sent this POST: keep the money reserved and check the merchant instead.
+   const refundId=(row.payload as {refundId?:string}|null)?.refundId,operation=refundId?await tx.payload.findByID({collection:'refund-operations',id:refundId,depth:0,req:tx.req,overrideAccess:true}):null
+   if(operation&&['authorized','dispatching'].includes(operation.state)){
+    await tx.payload.update({collection:'refund-operations',id:operation.id,data:{state:'uncertain',reasonCode:'restored-before-outcome-known',observedAt:at},req:tx.req,overrideAccess:true})
+    await enqueue(tx,{semanticKey:'reconcile-refund:'+operation.id+':restored',kind:'reconcile-refund',payload:{refundId:operation.id},availableAt:at})
+   }
+  }
   counts.work++
  }
  await appendAudit(tx,{action:'recovery:capabilities-invalidated',recordType:'recovery-fences',outcome:'success',safeChanges:{count:counts.accounts+counts.tokens+counts.claims+counts.links+counts.work}})

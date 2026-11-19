@@ -24,6 +24,8 @@ export async function authorizeRefund(ctx:CommandContext,input:RefundInput):Prom
   }else{
    const owned=await tx.payload.count({collection:'payment-inbox',where:{and:[{source:{equals:'retrieval'}},{environment:{equals:payment.environment}},{providerPaymentId:{equals:payment.providerPaymentId}},{providerStatus:{equals:'PAYMENT_SUCCESS'}},{amountMinor:{equals:payment.amountMinor}},{currency:{equals:payment.currency}}]},req:tx.req,overrideAccess:false})
    if(!owned.totalDocs||payment.environment!==parseEnvironment(process.env).mayaEnvironment)throw new Error('Merchant-owned collection proof is required')
+   // Dashboard refunds are invisible until imported, so every repayment of a Maya collection needs a recent merchant check.
+   if(!payment.refundsCheckedAt||Date.parse(ctx.clock.now())-Date.parse(payment.refundsCheckedAt)>rule.checkFreshnessMinutes*60000)throw new Error('Check Maya for refunds made outside the app before requesting a repayment')
   }
   if(value.reason==='guest-cancellation'&&booking.status!=='cancelled'||['duplicate-payment','late-payment'].includes(value.reason)&&payment.appliedRevision!=null||value.reason==='manual-review'&&payment.appliedRevision!=null&&!['cancelled','completed','expired'].includes(booking.status))throw new Error('The refund reason does not authorize returning this stay funding')
   if(value.reason==='stay-change'){

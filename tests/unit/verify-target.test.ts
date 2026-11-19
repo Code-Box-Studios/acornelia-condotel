@@ -30,4 +30,8 @@ describe('deployment target verification',()=>{
   expect(verifyTarget(live)).toMatchObject({appEnv:'production',databaseProject:'prodref123456',mayaEnvironment:'production'})
   for(const config of [{...live,mayaEnvironment:'sandbox' as const},{...live,databaseUrl:preview.databaseUrl,migrationDatabaseUrl:preview.migrationDatabaseUrl},{...live,appUrl:'https://acornelia-git-main.vercel.app'},{...live,operationMode:'reconcile'}])expect(()=>verifyTarget(config)).toThrow()
  })
+ it('refuses hosted targets when the production registry is missing or incomplete',()=>{
+  for(const registry of [{databaseProjects:[],appOrigins:[]},{databaseProjects:['prodref123456'],appOrigins:[]},{databaseProjects:[],appOrigins:['https://acornelia.example.ph']}])expect(()=>verifyTarget({...preview,production:registry})).toThrow()
+  expect(verifyTarget({...preview,appEnv:'development',appUrl:'http://localhost:3042',databaseUrl:'postgresql://acornelia:secret@127.0.0.1:55432/acornelia_dev',migrationDatabaseUrl:undefined,production:{databaseProjects:[],appOrigins:[]}})).toMatchObject({appEnv:'development',databaseProject:'local'})
+ })
 })

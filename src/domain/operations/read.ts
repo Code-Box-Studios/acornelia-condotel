@@ -12,16 +12,17 @@ export type StayState='expected'|'in-house'|'departed'|'no-show'|'unconfirmed'|'
 export type StaffBookingSummary={id:string;bookingCode:string|null;status:Booking['status'];stayState:StayState;source:Booking['source'];arrival:string;departure:string;guestName:string|null;roomLabel:string|null;total:Money|null;revision:number}
 export type StaffBookingView=StaffBookingSummary&{
  contact:{name:string;email:string;phone:string|null}|null;stayingGuest:string|null;collected:Money[]
- payments:{id:string;environment:string;status:string;amount:Money;collectedAt:string|null;providerReference:string}[]
+ payments:{id:string;environment:string;status:string;amount:Money;collectedAt:string|null;providerReference:string;refundsCheckedAt:string|null}[]
  refunds:{id:string;origin:string;method:string;state:string;reason:string;amount:Money;createdAt:string}[]
  issues:{id:string;reasonCode:string;state:string;createdAt:string;resolutionCode:string|null}[]
  notes:{id:string;text:string;staffName:string;recordedAt:string}[]
  stayEvents:{kind:string;propertyDate:string;occurredAt:string}[]
  allowedActions:StayActionKind[]
+ reductions:{id:string;label:string}[]
 }
 export type TodayView={propertyDate:string;range:{from:string;to:string;timezone:string};arrivals:StaffBookingSummary[];departures:StaffBookingSummary[];inHouse:StaffBookingSummary[];upcoming:StaffBookingSummary[];openIssues:{id:string;reasonCode:string;bookingCode:string|null;createdAt:string}[];uncertainRefunds:number;pendingOfflineReviews:number;openEnquiries:number}
 export type CalendarView={from:string;days:string[];rooms:{id:string;label:string}[];entries:{roomId:string;kind:'booking'|'hold'|'block';from:string;to:string;bookingId:string|null;bookingCode:string|null;blockId:string|null;label:string|null}[]}
-export type PaymentQueue={issues:{id:string;reasonCode:string;bookingId:string|null;bookingCode:string|null;observed:Money|null;createdAt:string}[];uncertain:{id:string;bookingId:string;bookingCode:string|null;method:string;amount:Money;createdAt:string;candidates:{id:string;providerOperationId:string|null;amount:Money}[]}[];offline:{id:string;bookingId:string;bookingCode:string|null;amount:Money;attestation:{evidenceId:string;method:string;receiptReference:string;paidAt:string;attestedBy:string}|null}[]}
+export type PaymentQueue={issues:{id:string;reasonCode:string;bookingId:string|null;bookingCode:string|null;observed:Money|null;createdAt:string}[];uncertain:{id:string;bookingId:string;bookingCode:string|null;paymentId:string;method:string;amount:Money;createdAt:string;candidates:{id:string;providerOperationId:string|null;amount:Money}[]}[];offline:{id:string;bookingId:string;bookingCode:string|null;amount:Money;attestation:{evidenceId:string;method:string;receiptReference:string;paidAt:string;attestedBy:string}|null}[]}
 export type EnquiryRow={id:string;reference:string;submittedAt:string;state:string;contact:{name:string;email:string;phone:string|null;message:string}|null;subject:string|null;eventDate:string|null;followUpOutcome:string|null;closedAt:string|null}
 export type BookingSearch={text?:string;from?:string;to?:string}
 const codePattern=/^ACN-[0-9A-F]{16}$/,dateOf=(value:string)=>value.slice(0,10)
@@ -76,17 +77,19 @@ export async function bookingView(tx:DbTx,ctx:CommandContext,booking:Booking,rul
  const issues=await tx.payload.find({collection:'payment-issues',where:{booking:{equals:booking.id}},sort:'-createdAt',limit:200,depth:0,req:tx.req,overrideAccess:false})
  const notes=await tx.payload.find({collection:'staff-notes',where:{booking:{equals:booking.id}},sort:'recordedAt',limit:500,depth:0,req:tx.req,overrideAccess:false})
  const events=await tx.payload.find({collection:'stay-events',where:{booking:{equals:booking.id}},sort:'occurredAt',limit:10,depth:0,req:tx.req,overrideAccess:false})
+ const changes=await tx.payload.find({collection:'booking-changes',where:{and:[{booking:{equals:booking.id}},{kind:{equals:'stay'}},{state:{equals:'completed'}}]},limit:100,depth:0,req:tx.req,overrideAccess:false})
  if(payments.hasNextPage||refunds.hasNextPage||issues.hasNextPage||notes.hasNextPage)throw new StaffFacingError('Booking history requires operator review')
  const names=await staffNames(tx,[...new Set(notes.docs.map(row=>relationshipId(row.staff)!))]),collected=new Map<string,bigint>()
  for(const row of payments.docs)if(row.status==='collected')collected.set(row.currency,(collected.get(row.currency)??0n)+BigInt(row.amountMinor))
  const now=ctx.clock.now(),today=ctx.clock.today(timezone)
  return {...summary,contact:contactOf(booking),stayingGuest:booking.stayingGuest??null,collected:[...collected].map(([currency,minor])=>({minor:minor.toString(),currency})),
-  payments:payments.docs.map(row=>({id:row.id,environment:row.environment,status:row.status,amount:{minor:row.amountMinor,currency:row.currency},collectedAt:row.collectedAt??null,providerReference:row.environment==='offline'?'Staff-recorded receipt':row.providerPaymentId})),
+  payments:payments.docs.map(row=>({id:row.id,environment:row.environment,status:row.status,amount:{minor:row.amountMinor,currency:row.currency},collectedAt:row.collectedAt??null,providerReference:row.environment==='offline'?'Staff-recorded receipt':row.providerPaymentId,refundsCheckedAt:row.refundsCheckedAt??null})),
   refunds:refunds.docs.map(row=>({id:row.id,origin:row.origin,method:row.method,state:row.state,reason:row.reason,amount:{minor:row.actualAmountMinor??row.amountMinor,currency:row.actualCurrency??row.currency},createdAt:row.createdAt})),
   issues:issues.docs.map(row=>({id:row.id,reasonCode:row.reasonCode,state:row.state??'open',createdAt:row.createdAt,resolutionCode:row.resolutionCode??null})),
   notes:notes.docs.map(row=>({id:row.id,text:row.text,staffName:names.get(relationshipId(row.staff)!)??'Staff member',recordedAt:row.recordedAt})),
   stayEvents:events.docs.map(row=>({kind:row.kind,propertyDate:row.propertyDate,occurredAt:row.occurredAt})),
-  allowedActions:allowedStayActions(booking,kinds,today,localHour(timezone,now),rule)}
+  allowedActions:allowedStayActions(booking,kinds,today,localHour(timezone,now),rule),
+  reductions:changes.docs.filter(row=>BigInt(row.deltaMinor)<0n).map(row=>({id:row.id,label:'Revision '+row.targetRevision+' reduced the total by '+(-BigInt(row.deltaMinor)/100n).toString()+'.'+(-BigInt(row.deltaMinor)%100n).toString().padStart(2,'0')+' '+row.currency}))}
 }
 /** A booking code locates a reservation for signed-in staff; it never proves the holder is the guest. */
 export async function lookupBooking(ctx:CommandContext,code:string):Promise<StaffBookingView|null>{
@@ -178,7 +181,7 @@ export async function readPaymentQueue(ctx:CommandContext):Promise<PaymentQueue>
   const names=await staffNames(tx,[...new Set(attestations.map(row=>relationshipId(row.sourceStaff)!))]),proof=z.object({method:z.string(),receiptReference:z.string(),paidAt:z.string()}).passthrough()
   return {
    issues:issues.docs.map(row=>({id:row.id,reasonCode:row.reasonCode,bookingId:relationshipId(row.booking)??null,bookingCode:codes.get(relationshipId(row.booking)??'')??null,observed:row.observedAmountMinor&&row.observedCurrency?{minor:row.observedAmountMinor,currency:row.observedCurrency}:null,createdAt:row.createdAt})),
-   uncertain:uncertain.docs.map(row=>({id:row.id,bookingId:relationshipId(row.booking)!,bookingCode:codes.get(relationshipId(row.booking)!)??null,method:row.method,amount:{minor:row.amountMinor,currency:row.currency},createdAt:row.createdAt,
+   uncertain:uncertain.docs.map(row=>({id:row.id,bookingId:relationshipId(row.booking)!,bookingCode:codes.get(relationshipId(row.booking)!)??null,paymentId:relationshipId(row.payment)!,method:row.method,amount:{minor:row.amountMinor,currency:row.currency},createdAt:row.createdAt,
     candidates:imported.filter(item=>relationshipId(item.payment)===relationshipId(row.payment)&&item.actualAmountMinor===row.amountMinor&&item.method===row.method&&!settled.has(item.id)).map(item=>({id:item.id,providerOperationId:item.providerOperationId??null,amount:{minor:item.actualAmountMinor!,currency:item.actualCurrency??item.currency}}))})),
    offline:offline.docs.map(row=>{const evidence=attestations.find(item=>relationshipId(item.operation)===row.id),parsed=evidence?proof.safeParse(evidence.proof):null
     return {id:row.id,bookingId:relationshipId(row.booking)!,bookingCode:codes.get(relationshipId(row.booking)!)??null,amount:{minor:row.amountMinor,currency:row.currency},attestation:evidence&&parsed?.success?{evidenceId:evidence.id,method:parsed.data.method,receiptReference:parsed.data.receiptReference,paidAt:parsed.data.paidAt,attestedBy:names.get(relationshipId(evidence.sourceStaff)!)??'Staff member'}:null}}),

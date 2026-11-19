@@ -1,6 +1,6 @@
 import type {CollectionConfig} from 'payload'
-import {commandOnly} from '../access/internal'
-export const RefundEvidence:CollectionConfig={slug:'refund-evidence',access:commandOnly,admin:{hidden:true},fields:[
+import {commandDeveloperOnly} from '../access/internal'
+export const RefundEvidence:CollectionConfig={slug:'refund-evidence',access:commandDeveloperOnly,admin:{hidden:true},fields:[
  {name:'semanticKey',type:'text',required:true,unique:true},
  {name:'payment',type:'relationship',relationTo:'payment-transactions',required:true,index:true},{name:'operation',type:'relationship',relationTo:'refund-operations',index:true},
  {name:'environment',type:'select',options:['sandbox','production','offline'],required:true},

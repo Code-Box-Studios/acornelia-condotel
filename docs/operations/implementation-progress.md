@@ -4,7 +4,7 @@ Started November 13, 2026, following the user's instruction to implement the rev
 
 ## Current state
 
-Tasks 01–26 are implemented locally. The latest full run passed 386 automated checks in 42 files (including the recovery rehearsal) and 110 Chromium desktop/mobile checks. Tasks 27–29 remain. Production services and owner policy approvals are still gated.
+Tasks 01–26 and the local part of Task 27 are implemented. The latest full run passed 401 automated checks in 43 files (including the recovery rehearsal) and 114 Chromium desktop/mobile checks. The rest of Task 27 and Tasks 28–29 remain. Production services and owner policy approvals are still gated.
 
 - Task 01: application foundation implemented. Next.js 16.4.6, Payload 3.93.0, React 19.3.1, TypeScript 5.9.3 and pnpm 12.5.1 are locked.
 - Foundation validation: 19 unit tests passed after five intended positive-path failures; lint and TypeScript checks passed. Application build remains part of Task 02 after migrations.
@@ -247,3 +247,20 @@ The named operator, backup provider, recovery targets, hosted media restore and 
 Task 27's local part adds `verifyTarget` (`scripts/verify-target.ts`), the `verify` CI workflow and a minimal `vercel.json`; see the [operations guide](deployment.md#deployment-target-verification-and-ci--november-19-2026). Four unit cases cover the named check (a preview using the production database or live Maya is refused), an accepted isolated preview that reports no secrets, swapped environments, a short runner secret, a mismatched migration project, HTTP origins, local preview databases and the production rules. The CI workflow has not run yet.
 
 The remaining Task 27 steps use real Supabase, Vercel, Maya, Brevo and storage accounts and are paused until the owner or developer authorizes them. Tasks 28 (acceptance and UAT) and 29 (release and handover) need the owner.
+
+## Independent review fixes — November 19, 2026
+
+A fresh reviewer examined Tasks 23–27 and found two critical and eight important issues. Fixes:
+
+- Dashboard refunds were only imported during recovery. Every repayment of a Maya collection now needs a recent complete merchant read, triggered by staff with Check Maya, so the same money cannot be returned twice through a cash reimbursement.
+- After a restore, accounts removed, re-emailed or deleted after the backup could regain access through password recovery. Resumption now holds every account except the named operator until staff confirm it outside the restored database.
+- Stuck refund reservations: a dispatch that fails before sending now releases its reservation; a restore marks unsent refund requests uncertain and schedules a merchant check; unsent requests and evidence-free offline reimbursements can be withdrawn.
+- Bounded refund checks no longer run out while the single request is still in flight.
+- A void imported by a merchant read before its POST receipt is no longer counted twice.
+- Server-rendered pages, Payload's admin and its server functions now check the recovery fence before reading any session.
+- The workspace can cancel a booking with the guest agreement and request a cheaper-stay refund. Date/room change quoting and supplemental payment screens remain to be built.
+- Generated endpoints for stay events, staff notes, refund records, payment issues and recovery fences are developer-only and every read is logged.
+- `verifyTarget` refuses hosted targets without a production registry.
+- The restore rehearsal now covers a staff removal, an email change and an anonymization after the backup. Rebuilding bookings and payments made after a backup stays a manual, documented step pending Decision 10.
+
+Validation: all 401 automated checks in 43 files and all 114 Chromium desktop/mobile checks passed in serialized runs, with lint, TypeScript, diff whitespace, the development migrations (`20261119_130748_refund_checks`, `20261119_131742_recovery_holds`) and the optimized build. Each fix was first shown by a failing test. The reviewer's minor findings are recorded for later work.

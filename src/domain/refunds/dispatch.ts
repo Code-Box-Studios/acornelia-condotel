@@ -1,5 +1,5 @@
 import {z} from 'zod'
-import type {CommandContext} from '@/domain/db/types'
+import type {CommandContext,DbTx} from '@/domain/db/types'
 import type {WorkLease,WorkResult} from '@/domain/work/types'
 import type {MayaGateway,ProviderMoneyResult} from '@/integrations/maya/types'
 import {assertWorker,fencedRow} from '@/domain/work/validation'
@@ -12,9 +12,17 @@ import {enqueue} from '@/domain/work/enqueue'
 import {appendAudit} from '@/domain/audit/append'
 import {admitRefundFact,postedRefundFact} from './facts'
 import {applyRefundEvidenceTx} from './apply'
+async function notDispatched(tx:DbTx,id:string,code:string){
+ const current=await tx.payload.findByID({collection:'refund-operations',id,depth:0,req:tx.req,overrideAccess:false})
+ if(current.state!=='authorized'||current.dispatchGeneration!==0)return
+ await tx.payload.update({collection:'refund-operations',id:current.id,data:{state:'failed',reasonCode:code,resultProof:{version:1,source:'local-not-dispatched',reason:code}},req:tx.req,overrideAccess:false})
+ await appendAudit(tx,{action:'refund:not-dispatched',recordType:'refund-operations',recordId:current.id,outcome:'refused',safeChanges:{reasonCode:code}})
+}
 export async function dispatchRefund(ctx:CommandContext,lease:WorkLease,gateway:MayaGateway,signal?:AbortSignal):Promise<WorkResult>{
  assertWorker(ctx)
- const prepared=await ctx.uow.run(ctx.actor,async tx=>{
+ const {refundId:leasedRefund}=z.object({refundId:z.uuid()}).strict().parse(lease.payload)
+ let prepared
+ try{prepared=await ctx.uow.run(ctx.actor,async tx=>{
   const work=await fencedRow(tx,lease,ctx.clock.now())
   if(work.kind!=='refund'||!work.dispatchStarted)throw new Error('Refund dispatch requires its started work lease')
   const {refundId}=z.object({refundId:z.uuid()}).strict().parse(work.payload),operation=await tx.payload.findByID({collection:'refund-operations',id:refundId,depth:0,req:tx.req,overrideAccess:false})
@@ -28,9 +36,12 @@ export async function dispatchRefund(ctx:CommandContext,lease:WorkLease,gateway:
   await enqueue(tx,{semanticKey:'reconcile-refund:'+operation.id+':dispatch',kind:'reconcile-refund',payload:{refundId:operation.id},availableAt:new Date(Date.parse(ctx.clock.now())+rule.reconcileSeconds*1000).toISOString()})
   await appendAudit(tx,{action:'refund:dispatch-owned',recordType:'refund-operations',recordId:operation.id,outcome:'unknown',safeChanges:{amountMinor:operation.amountMinor,currency:operation.currency,bookingId:balance.bookingId}})
   return {kind:'dispatch' as const,operation,payment:balance.payment,environment:balance.payment.environment,request:{operationId:operation.id,paymentId:balance.payment.providerPaymentId,reference:balance.payment.merchantReference,amount:{minor:operation.amountMinor,currency:operation.currency},reason:operation.reason}}
- })
+ })}catch{
+  // Generation 0 proves no provider request was sent; the fenced completion releases the reservation.
+  return {state:'done',apply:tx=>notDispatched(tx,leasedRefund,'refused-before-send')}
+ }
  if(prepared.kind==='skip')return {state:'done'}
- if(prepared.kind==='refused')return {state:'done',apply:async tx=>{const current=await tx.payload.findByID({collection:'refund-operations',id:prepared.id,depth:0,req:tx.req,overrideAccess:false});if(current.state==='authorized'&&current.dispatchGeneration===0)await tx.payload.update({collection:'refund-operations',id:current.id,data:{state:'failed',reasonCode:prepared.code,resultProof:{version:1,source:'local-not-dispatched',reason:prepared.code}},req:tx.req,overrideAccess:false});await appendAudit(tx,{action:'refund:not-dispatched',recordType:'refund-operations',recordId:current.id,outcome:'refused',safeChanges:{reasonCode:prepared.code}})}}
+ if(prepared.kind==='refused'){const refused=prepared;return {state:'done',apply:tx=>notDispatched(tx,refused.id,refused.code)}}
  assertWorker(ctx)
  if(signal?.aborted||Date.parse(lease.expiresAt)<=Date.parse(ctx.clock.now()))throw new Error('Refund lease expired before dispatch')
  const owned=await ctx.uow.run(ctx.actor,async tx=>{await fencedRow(tx,lease,ctx.clock.now());const row=await tx.payload.findByID({collection:'refund-operations',id:prepared.operation.id,depth:0,req:tx.req,overrideAccess:false});return row.state==='dispatching'&&row.dispatchGeneration===1})

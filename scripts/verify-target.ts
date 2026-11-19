@@ -21,6 +21,8 @@ export function verifyTarget(config:TargetConfig):VerifiedTarget{
   if(origin.protocol!=='https:')throw new Error('Preview and production need an HTTPS origin')
   if((config.workRunnerSecret??'').length<32)throw new Error('WORK_RUNNER_SECRET must be set with at least 32 characters')
   if((config.payloadSecret??'').length<32)throw new Error('PAYLOAD_SECRET must be set with at least 32 characters')
+  // Without a registry the production checks below cannot fail, so hosted targets refuse to proceed.
+  if(!config.production.databaseProjects.length||!config.production.appOrigins.length)throw new Error('TARGET_PRODUCTION_REFS must name the production database projects and origins')
  }
  const project=databaseProject(config.databaseUrl)
  if(config.migrationDatabaseUrl!==undefined&&databaseProject(config.migrationDatabaseUrl)!==project)throw new Error('The migration database belongs to a different project than the runtime database')

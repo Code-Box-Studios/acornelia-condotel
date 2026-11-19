@@ -1,6 +1,6 @@
 import type {CollectionConfig} from 'payload'
-import {commandOnly} from '../access/internal'
-export const RefundOperations:CollectionConfig={slug:'refund-operations',access:commandOnly,admin:{useAsTitle:'commandKey'},indexes:[{fields:['providerEnvironment','providerOperationId'],unique:true}],fields:[
+import {commandDeveloperOnly} from '../access/internal'
+export const RefundOperations:CollectionConfig={slug:'refund-operations',access:commandDeveloperOnly,admin:{useAsTitle:'commandKey'},indexes:[{fields:['providerEnvironment','providerOperationId'],unique:true}],fields:[
  {name:'commandKey',type:'text',required:true,unique:true},{name:'fingerprint',type:'text',required:true},
  {name:'origin',type:'select',options:['app','provider','offline'],required:true},
  {name:'booking',type:'relationship',relationTo:'bookings',required:true,index:true},{name:'payment',type:'relationship',relationTo:'payment-transactions',required:true,index:true},

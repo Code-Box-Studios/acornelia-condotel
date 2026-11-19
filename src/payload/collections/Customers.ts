@@ -10,5 +10,5 @@ export const Customers:CollectionConfig={
   admin:{useAsTitle:'email',hidden:true},
   access:{create:()=>false,read:ownAccount('customers'),update:()=>false,delete:()=>false,admin:()=>false},
   hooks:{beforeLogin:[rejectDeactivatedLogin],beforeChange:[revokeOnDeactivate]},
-  fields:[{name:'securityRevision',type:'number',required:true,defaultValue:1,min:1,access:{create:()=>false,read:()=>false,update:()=>false}},{name:'name',type:'text',required:true},{name:'deactivated',type:'checkbox',defaultValue:false,access:{create:()=>false,update:()=>false}},{name:'anonymizedAt',type:'date',access:{create:()=>false,read:()=>false,update:()=>false}}],
+  fields:[{name:'securityRevision',type:'number',required:true,defaultValue:1,min:1,access:{create:()=>false,read:()=>false,update:()=>false}},{name:'name',type:'text',required:true},{name:'deactivated',type:'checkbox',defaultValue:false,access:{create:()=>false,update:()=>false}},{name:'anonymizedAt',type:'date',access:{create:()=>false,read:()=>false,update:()=>false}},{name:'recoveryHoldAt',type:'date',access:{create:()=>false,read:()=>false,update:()=>false}}],
 }

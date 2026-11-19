@@ -29,6 +29,8 @@ import * as migration_20261116_041746_refund_evidence from './20261116_041746_re
 import * as migration_20261119_111300_operations_workspace from './20261119_111300_operations_workspace';
 import * as migration_20261119_115023_account_lifecycle from './20261119_115023_account_lifecycle';
 import * as migration_20261119_121350_recovery_fences from './20261119_121350_recovery_fences';
+import * as migration_20261119_130748_refund_checks from './20261119_130748_refund_checks';
+import * as migration_20261119_131742_recovery_holds from './20261119_131742_recovery_holds';
 
 export const migrations = [
   {
@@ -184,6 +186,16 @@ export const migrations = [
   {
     up: migration_20261119_121350_recovery_fences.up,
     down: migration_20261119_121350_recovery_fences.down,
-    name: '20261119_121350_recovery_fences'
+    name: '20261119_121350_recovery_fences',
+  },
+  {
+    up: migration_20261119_130748_refund_checks.up,
+    down: migration_20261119_130748_refund_checks.down,
+    name: '20261119_130748_refund_checks',
+  },
+  {
+    up: migration_20261119_131742_recovery_holds.up,
+    down: migration_20261119_131742_recovery_holds.down,
+    name: '20261119_131742_recovery_holds'
   },
 ];

@@ -1,5 +1,6 @@
 /* THIS FILE WAS GENERATED AUTOMATICALLY BY PAYLOAD. MODIFY AT YOUR OWN RISK. */
 import config from '@payload-config'
+import { assertPageFence } from '@/http/page-fence'
 import '@payloadcms/next/css'
 import type { ServerFunctionClient } from 'payload'
 import {
@@ -19,6 +20,7 @@ type Args = {
 
 const serverFunction: ServerFunctionClient = async function (args) {
   'use server'
+  await assertPageFence()
   return handleServerFunctions({
     ...args,
     config,

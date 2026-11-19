@@ -311,6 +311,7 @@ export interface Customer {
   name: string;
   deactivated?: boolean | null;
   anonymizedAt?: string | null;
+  recoveryHoldAt?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -409,6 +410,7 @@ export interface Quote {
 export interface StaffUser {
   id: string;
   securityRevision?: number | null;
+  recoveryHoldAt?: string | null;
   deactivated?: boolean | null;
   name: string;
   role: 'staff' | 'developer';
@@ -702,6 +704,7 @@ export interface PaymentTransaction {
   appliedRevision?: number | null;
   collectedAt?: string | null;
   lastObservedAt?: string | null;
+  refundsCheckedAt?: string | null;
   providerStatus?: string | null;
   offlineEvidence?:
     | {
@@ -1933,6 +1936,7 @@ export interface MediaSelect<T extends boolean = true> {
  */
 export interface StaffUsersSelect<T extends boolean = true> {
   securityRevision?: T;
+  recoveryHoldAt?: T;
   deactivated?: T;
   name?: T;
   role?: T;
@@ -1963,6 +1967,7 @@ export interface CustomersSelect<T extends boolean = true> {
   name?: T;
   deactivated?: T;
   anonymizedAt?: T;
+  recoveryHoldAt?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -2100,6 +2105,7 @@ export interface PaymentTransactionsSelect<T extends boolean = true> {
   appliedRevision?: T;
   collectedAt?: T;
   lastObservedAt?: T;
+  refundsCheckedAt?: T;
   providerStatus?: T;
   offlineEvidence?: T;
   offlineReceiptKey?: T;

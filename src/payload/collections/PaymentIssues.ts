@@ -1,8 +1,8 @@
 import type {CollectionConfig} from 'payload'
-import {commandOnly} from '../access/internal'
+import {commandDeveloperOnly} from '../access/internal'
 import {date,select} from '../fields/common'
 export const PaymentIssues:CollectionConfig={
-  slug:'payment-issues',access:commandOnly,
+  slug:'payment-issues',access:commandDeveloperOnly,
   fields:[
     {name:'issueKey',type:'text',required:true,unique:true},
     {name:'reasonCode',type:'text',required:true},

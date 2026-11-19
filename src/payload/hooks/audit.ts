@@ -22,7 +22,7 @@ async function authEvent(req:Parameters<CollectionAfterChangeHook>[0]['req'],act
 }
 export function withStaffAudit(collection:CollectionConfig):CollectionConfig{
   const existing=collection.hooks||{}
-  const sensitive=new Set(['enquiries','audit-entries','bookings','staff-users','customers','payment-attempts','payment-transactions'])
+  const sensitive=new Set(['enquiries','audit-entries','bookings','staff-users','customers','payment-attempts','payment-transactions','stay-events','staff-notes','refund-operations','refund-evidence','payment-issues','recovery-fences'])
   return {...collection,hooks:{...existing,
     ...(collection.slug!=='audit-entries'?{afterChange:[...(existing.afterChange||[]),changed],afterDelete:[...(existing.afterDelete||[]),async({doc,req})=>{
       const actor=eventActor(req)

@@ -1,3 +1,4 @@
+import {assertPageFence} from '@/http/page-fence'
 import {headers} from 'next/headers'
 import Link from 'next/link'
 import {validateBookingSearch} from '@/features/booking/search'
@@ -11,6 +12,7 @@ import {configuredMayaGateway} from '@/integrations/maya/configured'
 import {requireCustomer} from '@/features/customer/bookings'
 export const metadata={title:'Your stay',robots:{index:false,follow:false}}
 export default async function Book({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
+  await assertPageFence('business-write')
   const params=await searchParams,request=new Request(process.env.APP_URL!,{headers:await headers()}),ctx=await requestContext(request),session=readDraftSession(request,ctx)
   let initial:CheckoutDraft|null=null
   if(session?.ref){try{initial=await resumeCheckoutDraft(session.ref,ctx.actor,session)}catch{/* Private, expired and revoked drafts are not exposed. */}}

@@ -8,6 +8,8 @@ import {runWorkBatch} from '@/integrations/work-runner'
 import {dispatchCheckout} from '@/domain/payments/create-checkout'
 import {dispatchRefund} from '@/domain/refunds/dispatch'
 import {authorizeResumption,signResumptionEvidence} from '@/domain/recovery/resume'
+import {applyAccountLifecycle} from '@/domain/privacy/lifecycle'
+import {requestCustomerRecovery} from '@/features/auth/actions'
 import {POST as identity} from '@/app/api/identity/customer/[action]/route'
 import {POST as bookingView} from '@/app/api/booking/view/route'
 import type {CommandContext} from '@/domain/db/types'
@@ -24,13 +26,19 @@ it('fences old credentials money work and private links after restore',async()=>
  let h:TestHarness|undefined=await createHarness()
  try{
   await h.reset();h.clock.set('2026-11-16T04:00:00.000Z')
-  const f=await confirmedOperationsFixture(h,{customer:true,role:'developer'}),link=await h.uow.run({kind:'system',purpose:'payments'},tx=>createBookingView(tx,f.booking.id,'2026-12-31T00:00:00.000Z'))
+  const f=await confirmedOperationsFixture(h,{customer:true,role:'developer',lifecycle:{selfService:{deactivate:true,anonymize:true},staffRoles:['developer'],staffRemoval:true}}),link=await h.uow.run({kind:'system',purpose:'payments'},tx=>createBookingView(tx,f.booking.id,'2026-12-31T00:00:00.000Z'))
   expect((await h.rows('work-items',{state:{equals:'ready'}})).length).toBeGreaterThan(0)
+  const frontPassword='Synthetic-front-desk-recovery-946!',front=await h.seed('staff-users',{name:'Front desk removed later',email:'front-removed@example.test',password:frontPassword,role:'staff'})
+  const other=await h.seed('customers',{name:'Deleted later',email:'deleted-later@example.test',password,_verified:true})
   await h.close();h=undefined
   await admin(`CREATE DATABASE "${backup}" TEMPLATE "${testName}"`)
   h=await createHarness()
   await h.payload.update({collection:'customers',id:f.customer.id,data:{password:'Synthetic-changed-after-backup-946!'},overrideAccess:true})
   await h.pool.query('UPDATE booking_views SET revoked_at=now() WHERE id=$1',[link.id])
+  const liveCtx:CommandContext={...f.ctx,uow:h.uow,clock:h.clock}
+  await applyAccountLifecycle(liveCtx,front.id,1,{kind:'remove-staff',reason:'left-the-property'})
+  await applyAccountLifecycle(liveCtx,f.customer.id,1,{kind:'change-email',email:'moved-after-backup@example.test',evidenceReference:'synthetic-identity-check'})
+  await applyAccountLifecycle(liveCtx,other.id,1,{kind:'anonymize',reason:'customer-request'})
   await h.close();h=undefined
   await admin(`ALTER DATABASE "${testName}" RENAME TO "${live}"`);await admin(`ALTER DATABASE "${backup}" RENAME TO "${testName}"`)
   process.env.APP_OPERATION_MODE='normal';process.env.APP_RECOVERY_GENERATION='restore-2';process.env.RECOVERY_OPERATOR_KEY=key
@@ -46,7 +54,7 @@ it('fences old credentials money work and private links after restore',async()=>
   await expect(runWorkBatch(worker,handlers)).rejects.toThrow()
   expect(outboundMoneyCalls).toBe(0);expect(outboundEmailCalls).toBe(0)
   const recovery:CommandContext={...h.ctx({kind:'system',purpose:'recovery'}),policy:f.ctx.policy}
-  const evidence={generation:'restore-2',operator:'Synthetic recovery operator',backupTakenAt:'2026-11-16T04:00:00.000Z',restoredAt:'2026-11-16T06:00:00.000Z',providerReconciliation:'completed' as const,postBackupReview:'completed' as const,measuredRecoveryMinutes:120,approvedTargetMinutes:240}
+  const evidence={generation:'restore-2',operator:'Synthetic recovery operator',operatorStaffEmail:f.staff.email,backupTakenAt:'2026-11-16T04:00:00.000Z',restoredAt:'2026-11-16T06:00:00.000Z',providerReconciliation:'completed' as const,postBackupReview:'completed' as const,measuredRecoveryMinutes:120,approvedTargetMinutes:240}
   await expect(authorizeResumption(recovery,{...evidence,signature:signResumptionEvidence(evidence,key)})).rejects.toThrow()
   process.env.APP_OPERATION_MODE='reconcile'
   await expect(authorizeResumption(recovery,{...evidence,signature:signResumptionEvidence({...evidence,operator:'Someone else'},key)})).rejects.toThrow()
@@ -54,6 +62,13 @@ it('fences old credentials money work and private links after restore',async()=>
   expect(permit).toMatchObject({generation:'restore-2',operator:'Synthetic recovery operator'})
   process.env.APP_OPERATION_MODE='normal'
   expect((await login()).status).toBe(401);expect((await view()).status).toBe(401)
+  const account=(collection:'customers'|'staff-users',id:string)=>h!.payload.findByID({collection,id,overrideAccess:true,showHiddenFields:true})
+  for(const [collection,id] of [['staff-users',front.id],['customers',f.customer.id],['customers',other.id]] as const)expect(await account(collection,id)).toMatchObject({deactivated:true,recoveryHoldAt:expect.any(String)})
+  expect((await account('staff-users',f.staff.id)).deactivated).toBe(false)
+  await expect(h.payload.login({collection:'staff-users',data:{email:front.email,password:frontPassword}})).rejects.toThrow()
+  const deliveries=(await h.rows('auth-deliveries')).length
+  await requestCustomerRecovery({...h.ctx({kind:'anonymous'}),policy:f.ctx.policy},f.customer.email)
+  expect(await h.rows('auth-deliveries')).toHaveLength(deliveries)
   expect(await h.rows('work-items',{and:[{state:{in:['ready','leased']}},{kind:{in:['create-checkout','refund','email','enquiry']}}]})).toHaveLength(0)
   await runWorkBatch(worker,handlers).catch(()=>null)
   expect(outboundMoneyCalls).toBe(0);expect(outboundEmailCalls).toBe(0)
@@ -66,4 +81,4 @@ it('fences old credentials money work and private links after restore',async()=>
   else if(!await exists(testName)&&await exists(backup))await admin(`ALTER DATABASE "${backup}" RENAME TO "${testName}"`)
   for(const name of [live,backup])if(name!==testName&&await exists(name))await admin(`DROP DATABASE "${name}" WITH (FORCE)`)
  }
-})
+},180000)

@@ -87,3 +87,12 @@ it('finds bookings by guest text, code or arrival range and shows stays and bloc
  expect(calendar.days[0]).toBe('2027-05-09');expect(calendar.rooms.map(row=>row.label)).toContain(room.label)
  expect(calendar.entries.map(row=>[row.kind,row.from,row.to,row.label])).toEqual(expect.arrayContaining([['booking','2027-05-10','2027-05-12',null],['block','2027-05-13','2027-05-14','Aircon service']]))
 })
+it('keeps generated reads of operations, refund and recovery records to developers and logs them',async()=>{
+ const f=await confirmedOperationsFixture(h);await addStaffNote(f.ctx,{commandKey:randomUUID(),bookingId:f.booking.id,text:'Generated-read probe note'})
+ const staffUser={...await h.payload.findByID({collection:'staff-users',id:f.staff.id,overrideAccess:true}),collection:'staff-users' as const}
+ for(const collection of ['staff-notes','stay-events','refund-operations','refund-evidence','payment-issues','recovery-fences'] as const)await expect(h.payload.find({collection,user:staffUser,overrideAccess:false})).rejects.toThrow()
+ const developer=await h.seed('staff-users',{name:'Generated read developer',email:'generated-read@example.test',password:'Synthetic-generated-read-passphrase-946!',role:'developer'})
+ const developerUser={...await h.payload.findByID({collection:'staff-users',id:developer.id,overrideAccess:true}),collection:'staff-users' as const}
+ expect((await h.payload.find({collection:'staff-notes',user:developerUser,overrideAccess:false})).docs).toHaveLength(1)
+ expect(await h.rows('audit-entries',{action:{equals:'staff-notes:read'}})).toHaveLength(1)
+})

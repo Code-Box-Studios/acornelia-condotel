@@ -14,6 +14,7 @@ const actionSchema=z.discriminatedUnion('kind',[
  z.object({kind:z.literal('deactivate'),reason}).strict(),
  z.object({kind:z.literal('anonymize'),reason}).strict(),
  z.object({kind:z.literal('remove-staff'),reason}).strict(),
+ z.object({kind:z.literal('release-recovery-hold'),evidenceReference:z.string().trim().min(1).max(240).regex(/^[^\u0000-\u001f\u007f]+$/),collection:z.enum(['customers','staff-users']).default('customers')}).strict(),
 ])
 /** Candidate lifecycle authority pending Decisions 05, 07 and 08. */
 export const lifecyclePolicySchema=z.object({selfService:z.object({deactivate:z.boolean(),anonymize:z.boolean()}).strict(),staffRoles:z.array(z.enum(['staff','developer'])).min(1).max(2),staffRemoval:z.boolean()}).strict()
@@ -30,6 +31,17 @@ async function removeStaff(tx:DbTx,ctx:CommandContext,id:string,expected:number,
  await appendAudit(tx,{action:'staff:removed',recordType:'staff-users',recordId:id,outcome:'success',safeChanges:{reasonCode:value.reason,role:staff.role}})
  return {collection:'staff-users',id,state:'removed',securityRevision:revision}
 }
+/** Re-enables an account held by a restore after staff confirmed it against records outside the restored database. */
+async function releaseHold(tx:DbTx,ctx:CommandContext,id:string,expected:number,value:{evidenceReference:string;collection:'customers'|'staff-users'},rule:z.infer<typeof lifecyclePolicySchema>,at:string):Promise<LifecycleResult>{
+ const staffAccount=value.collection==='staff-users'
+ if(ctx.actor.kind!=='staff'||(staffAccount?ctx.actor.role!=='developer'||ctx.actor.id===id:!rule.staffRoles.includes(ctx.actor.role)))throw new LifecycleAccessError('Only approved staff can release a restore hold')
+ const account=await tx.payload.findByID({collection:value.collection,id,depth:0,req:tx.req,overrideAccess:true,showHiddenFields:true}) as {securityRevision?:number|null;recoveryHoldAt?:string|null}
+ if((account.securityRevision??1)!==expected)throw new Error('The account changed; reload before releasing it')
+ if(!account.recoveryHoldAt)throw new Error('Only an account held by a restore can be released this way')
+ const revision=await revokeCapabilities(tx,{collection:value.collection,id},'recovery-hold-released',at,{deactivated:false,recoveryHoldAt:null})
+ await appendAudit(tx,{action:'account:recovery-hold-released',recordType:value.collection,recordId:id,outcome:'success',safeChanges:{reasonCode:'verified-outside-restore'}})
+ return {collection:value.collection,id,state:'active',securityRevision:revision}
+}
 /**
  * Applies one customer or staff lifecycle action against the account's current security revision.
  * Booking ownership never moves; email changes, deactivation and anonymization revoke prior access.
@@ -40,6 +52,7 @@ export async function applyAccountLifecycle(ctx:CommandContext,accountId:string,
  return ctx.uow.run(ctx.actor,async tx=>{
   const rule=lifecyclePolicySchema.parse((await requireCurrentPolicy(tx,ctx,['accountLifecycle'])).sections.accountLifecycle),at=ctx.clock.now()
   if(value.kind==='remove-staff')return removeStaff(tx,ctx,id,expected,value,rule,at)
+  if(value.kind==='release-recovery-hold')return releaseHold(tx,ctx,id,expected,value,rule,at)
   const self=ctx.actor.kind==='customer'&&ctx.actor.id===id,staff=ctx.actor.kind==='staff'&&rule.staffRoles.includes(ctx.actor.role)
   if(self?!(value.kind==='deactivate'&&rule.selfService.deactivate||value.kind==='anonymize'&&rule.selfService.anonymize):!staff)throw new LifecycleAccessError('This account change is not available to you')
   const customer=await tx.payload.findByID({collection:'customers',id,depth:0,req:tx.req,overrideAccess:true,showHiddenFields:true})

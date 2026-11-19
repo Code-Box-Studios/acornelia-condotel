@@ -100,3 +100,12 @@ it('never lets a historical claim attach after its account was deactivated',asyn
   expect(owned).toBe(!claim.revokedAt)
  }
 })
+it('releases a restore hold only for held accounts and never undoes a deactivation the holder chose',async()=>{
+ const f=await setup()
+ await h.payload.update({collection:'customers',id:f.customer.id,data:{deactivated:true,recoveryHoldAt:h.clock.now()},overrideAccess:true})
+ await expect(applyAccountLifecycle(f.customerCtx,f.customer.id,1,{kind:'release-recovery-hold',evidenceReference:'self'} as never)).rejects.toThrow()
+ await expect(applyAccountLifecycle(f.ctx,f.customer.id,1,{kind:'release-recovery-hold',evidenceReference:'synthetic-identity-check'})).resolves.toMatchObject({state:'active',securityRevision:2})
+ expect(await f.account()).toMatchObject({deactivated:false,recoveryHoldAt:null})
+ await applyAccountLifecycle(f.ctx,f.customer.id,2,{kind:'deactivate',reason:'customer-request'})
+ await expect(applyAccountLifecycle(f.ctx,f.customer.id,3,{kind:'release-recovery-hold',evidenceReference:'synthetic-identity-check'})).rejects.toThrow()
+})

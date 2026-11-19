@@ -6,7 +6,7 @@ import {appendAudit} from '@/domain/audit/append'
 import {databaseGeneration} from './fence'
 import {invalidateRestoredCapabilities} from './reconcile'
 const instant=z.iso.datetime({offset:true})
-const evidenceSchema=z.object({generation:z.string().regex(/^[A-Za-z0-9._-]{1,80}$/),operator:z.string().trim().min(3).max(120).regex(/^[^\u0000-\u001f\u007f]+$/),backupTakenAt:instant,restoredAt:instant,providerReconciliation:z.literal('completed'),postBackupReview:z.literal('completed'),measuredRecoveryMinutes:z.number().int().min(0).max(100000),approvedTargetMinutes:z.number().int().min(1).max(100000)}).strict()
+const evidenceSchema=z.object({generation:z.string().regex(/^[A-Za-z0-9._-]{1,80}$/),operator:z.string().trim().min(3).max(120).regex(/^[^\u0000-\u001f\u007f]+$/),operatorStaffEmail:z.string().trim().toLowerCase().pipe(z.email().max(254)),backupTakenAt:instant,restoredAt:instant,providerReconciliation:z.literal('completed'),postBackupReview:z.literal('completed'),measuredRecoveryMinutes:z.number().int().min(0).max(100000),approvedTargetMinutes:z.number().int().min(1).max(100000)}).strict()
 export type ResumptionEvidence=z.infer<typeof evidenceSchema>
 export const resumptionStages=['provider-intake','reconciliation','workers','authentication','business-writes'] as const
 export type ResumptionPermit={generation:string;previousGeneration:string|null;operator:string;issuedAt:string;stages:readonly string[];withinTarget:boolean}
@@ -35,7 +35,10 @@ export async function authorizeResumption(ctx:CommandContext,input:ResumptionEvi
    if(row?.operator!==evidence.operator)throw new Error('This generation was authorized by another operator')
    return {generation:row.generation,previousGeneration:row.previousGeneration??null,operator:row.operator,issuedAt:row.authorizedAt,stages,withinTarget}
   }
-  const at=ctx.clock.now(),invalidated=await invalidateRestoredCapabilities(tx,at)
+  // The operator account named in signed evidence stays usable (through password recovery); all others are held.
+  const operatorStaff=(await tx.payload.find({collection:'staff-users',where:{email:{equals:evidence.operatorStaffEmail}},limit:1,depth:0,req:tx.req,overrideAccess:true})).docs[0]
+  if(!operatorStaff||operatorStaff.role!=='developer'||operatorStaff.deactivated)throw new Error('The operator account must be an active developer in the restored database')
+  const at=ctx.clock.now(),invalidated=await invalidateRestoredCapabilities(tx,at,operatorStaff.id)
   await tx.payload.create({collection:'recovery-fences',data:{generation:evidence.generation,previousGeneration:current,operator:evidence.operator,authorizedAt:at,permit:{version:1,stages:[...stages],evidence:{backupTakenAt:evidence.backupTakenAt,restoredAt:evidence.restoredAt,measuredRecoveryMinutes:evidence.measuredRecoveryMinutes,approvedTargetMinutes:evidence.approvedTargetMinutes,withinTarget},signatureDigest:createHash('sha256').update(signature).digest('hex'),invalidated}},req:tx.req,overrideAccess:false})
   await appendAudit(tx,{action:'recovery:resumption-authorized',recordType:'recovery-fences',outcome:'success',safeChanges:{reasonCode:withinTarget?'within-target':'target-exceeded',count:invalidated.accounts}})
   return {generation:evidence.generation,previousGeneration:current,operator:evidence.operator,issuedAt:at,stages,withinTarget}

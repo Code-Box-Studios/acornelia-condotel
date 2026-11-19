@@ -23,6 +23,8 @@ export async function reconcilePaymentRefunds(ctx:CommandContext,paymentId:strin
  await ctx.uow.run(ctx.actor,async tx=>{
   for(const fact of result.facts)await admitRefundFact(tx,ctx,fact)
   await applyPendingRefundEvidence(tx,ctx,paymentId)
+  // Only a complete merchant read lets staff authorize another repayment of this collection.
+  if(result.complete)await tx.payload.update({collection:'payment-transactions',id:paymentId,data:{refundsCheckedAt:ctx.clock.now()},req:tx.req,overrideAccess:false})
  })
  return {state:result.complete?'reconciled':'uncertain',count:result.facts.length}
 }
@@ -40,10 +42,12 @@ async function outcomeIssue(tx:DbTx,ctx:CommandContext,operation:RefundOperation
  await enqueue(tx,{semanticKey:'payment-issue:'+row.id,kind:'email',payload:{category:'payment-issue',issueId:row.id},availableAt:ctx.clock.now()})
  await appendAudit(tx,{action:'refund:issue-opened',recordType:'payment-issues',recordId:row.id,outcome:'unknown',safeChanges:{reasonCode:'refund-outcome-uncertain'}})
 }
-/** True while the original dispatch may still finish its single POST under a live lease. */
-async function dispatchLive(tx:DbTx,operationId:string,now:string){
+/** The original dispatch's lease while it may still finish its single POST; null once it can no longer complete. */
+async function liveDispatch(tx:DbTx,operationId:string,now:string){
  const work=(await tx.payload.find({collection:'work-items',where:{semanticKey:{equals:'refund:'+operationId}},limit:1,depth:0,req:tx.req,overrideAccess:false})).docs[0]
- return !!work&&(work.state==='ready'||work.state==='leased'&&!!work.leaseExpires&&Date.parse(work.leaseExpires)>Date.parse(now))
+ if(!work)return null
+ if(work.state==='ready')return {generation:work.generation,until:now}
+ return work.state==='leased'&&work.leaseExpires&&Date.parse(work.leaseExpires)>Date.parse(now)?{generation:work.generation,until:work.leaseExpires}:null
 }
 /** Bounded merchant checks for one dispatched operation. An empty or failed read never releases its reservation. */
 export async function reconcileRefundWork(ctx:CommandContext,lease:WorkLease,gateway:MayaGateway,signal?:AbortSignal):Promise<WorkResult>{
@@ -64,7 +68,14 @@ export async function reconcileRefundWork(ctx:CommandContext,lease:WorkLease,gat
   let operation=await tx.payload.findByID({collection:'refund-operations',id:refundId,depth:0,req:tx.req,overrideAccess:false})
   const now=ctx.clock.now()
   if(!['dispatching','uncertain'].includes(operation.state))return
-  if(operation.state==='dispatching'&&!await dispatchLive(tx,operation.id,now)){
+  if(operation.state==='dispatching'){
+   const live=await liveDispatch(tx,operation.id,now)
+   if(live){
+    // The single POST may still finish: look again after its lease ends, without spending a bounded check.
+    const retryAt=new Date(Math.max(Date.parse(live.until),Date.parse(now))+plan.rule.reconcileSeconds*1000).toISOString()
+    await enqueue(tx,{semanticKey:'reconcile-refund:'+operation.id+':after-lease:'+live.generation,kind:'reconcile-refund',payload:{refundId:operation.id},availableAt:retryAt})
+    return
+   }
    operation=await tx.payload.update({collection:'refund-operations',id:operation.id,data:{state:'uncertain',reasonCode:'provider-outcome-unknown',observedAt:now},req:tx.req,overrideAccess:false})
    await appendAudit(tx,{action:'refund:result',recordType:'refund-operations',recordId:operation.id,outcome:'unknown',safeChanges:{state:'uncertain',amountMinor:operation.amountMinor,currency:operation.currency}})
   }
