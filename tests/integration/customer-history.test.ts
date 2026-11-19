@@ -76,7 +76,8 @@ describe('private customer booking history',()=>{
       const imported=await import('@/migrations')
       const migrations=imported.migrations.map(m=>({...m,up:(args:unknown)=>m.up(args as MigrateUpArgs),down:(args:unknown)=>m.down(args as MigrateDownArgs)}))
       await fresh.payload.db.migrate({migrations:migrations.slice(0,migrations.findIndex(m=>m.name==='20261115_182340_customer_history_claims'))})
-      const owner=await fresh.seed('customers',{name:'Existing owner fixture',email:'existing@example.test',password:'Synthetic-history-passphrase-946!',_verified:true})
+      // Seed the historical schema with SQL: the current Payload model knows columns that later migrations add.
+      const owner=(await fresh.pool.query("INSERT INTO customers(name,email,_verified) VALUES('Existing owner fixture','existing@example.test',true) RETURNING id")).rows[0] as {id:string}
       const inserted=await fresh.pool.query("INSERT INTO bookings(owner_customer_id,status,revision,arrival,departure,accepted_quote,contact,source) VALUES($1,'confirmed',1,'2027-02-10','2027-02-12',$2,$3,'website') RETURNING id",[owner.id,JSON.stringify({total:{minor:'1234',currency:'PHP'}}),JSON.stringify({name:'Preserved fixture'})])
       await fresh.payload.db.migrate({migrations})
       const preserved=(await fresh.rows('bookings'))[0]

@@ -27,6 +27,7 @@ import * as migration_20261116_025903_booking_changes from './20261116_025903_bo
 import * as migration_20261116_035134_refund_operations from './20261116_035134_refund_operations';
 import * as migration_20261116_041746_refund_evidence from './20261116_041746_refund_evidence';
 import * as migration_20261119_111300_operations_workspace from './20261119_111300_operations_workspace';
+import * as migration_20261119_115023_account_lifecycle from './20261119_115023_account_lifecycle';
 
 export const migrations = [
   {
@@ -172,6 +173,11 @@ export const migrations = [
   {
     up: migration_20261119_111300_operations_workspace.up,
     down: migration_20261119_111300_operations_workspace.down,
-    name: '20261119_111300_operations_workspace'
+    name: '20261119_111300_operations_workspace',
+  },
+  {
+    up: migration_20261119_115023_account_lifecycle.up,
+    down: migration_20261119_115023_account_lifecycle.down,
+    name: '20261119_115023_account_lifecycle'
   },
 ];

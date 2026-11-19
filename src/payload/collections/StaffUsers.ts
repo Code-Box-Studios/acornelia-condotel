@@ -6,5 +6,5 @@ export const StaffUsers: CollectionConfig = {
   admin:{useAsTitle:'email'},
   access:{create:developerOnly,read:args=>developerOnly(args)?true:activeStaff(args.req)?ownAccount('staff-users')(args):false,update:developerOnly,delete:()=>false,admin:({req})=>activeStaff(req)},
   hooks:{beforeLogin:[rejectDeactivatedLogin],beforeChange:[revokeOnDeactivate]},
-  fields:[{name:'deactivated',type:'checkbox',defaultValue:false,access:{create:developerOnly,update:developerOnly}},{name:'name',type:'text',required:true},{name:'role',type:'select',options:['staff','developer'],defaultValue:'staff',required:true,access:{create:()=>false,update:()=>false}}],
+  fields:[{name:'securityRevision',type:'number',defaultValue:1,min:1,access:{create:()=>false,read:()=>false,update:()=>false}},{name:'deactivated',type:'checkbox',defaultValue:false,access:{create:developerOnly,update:developerOnly}},{name:'name',type:'text',required:true},{name:'role',type:'select',options:['staff','developer'],defaultValue:'staff',required:true,access:{create:()=>false,update:()=>false}}],
 }

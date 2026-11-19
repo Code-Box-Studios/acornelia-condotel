@@ -286,6 +286,7 @@ export interface Customer {
   securityRevision: number;
   name: string;
   deactivated?: boolean | null;
+  anonymizedAt?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -383,6 +384,7 @@ export interface Quote {
  */
 export interface StaffUser {
   id: string;
+  securityRevision?: number | null;
   deactivated?: boolean | null;
   name: string;
   role: 'staff' | 'developer';
@@ -1889,6 +1891,7 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "staff-users_select".
  */
 export interface StaffUsersSelect<T extends boolean = true> {
+  securityRevision?: T;
   deactivated?: T;
   name?: T;
   role?: T;
@@ -1918,6 +1921,7 @@ export interface CustomersSelect<T extends boolean = true> {
   securityRevision?: T;
   name?: T;
   deactivated?: T;
+  anonymizedAt?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;

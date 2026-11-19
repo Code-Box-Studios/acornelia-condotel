@@ -497,3 +497,9 @@ Check-in is available from the arrival date until the night before departure for
 Internal notes are staff-only and append-only, and their text never enters the action log. Resolving a payment issue records a decision and never moves money. Closing an enquiry records an outcome and never reserves a room. Reports use the property time zone, keep booking, collection and refund figures separate, and show each currency separately. Spreadsheet exports require a separately approved role, neutralise formula-like cells and are logged.
 
 Acceptance evidence covers role refusal for customers and unapproved staff, code lookup, today's lists, check-in/out and no-show timing, concurrent check-in, stale revisions, notes, issue resolution, enquiry closure, search, the calendar, report bases and CSV protection, on desktop and phone layouts with synthetic data. Real staff roles, approved operating values and staff training remain owner and UAT gates.
+
+### Implemented account lifecycle candidate — November 19, 2026
+
+Customers can, when policy allows, deactivate or anonymize their own account. Approved staff can change a customer's name or, after checking identity, their email, and can deactivate or anonymize the account. A developer can remove another staff member's access while keeping at least one developer active. Email changes, deactivation, anonymization and removal end existing sessions, recovery tokens, unused claim tokens and account-bound private status links. Booking history never transfers by email, and no lifecycle action restores access or a role.
+
+Anonymization replaces the account's identity fields and keeps booking contact snapshots, payments, refunds, stay records and action logs as evidence pending the retention decision. These rules are candidates; Decisions 05, 07 and 08 must approve self-service, staff authority and retention before production use.

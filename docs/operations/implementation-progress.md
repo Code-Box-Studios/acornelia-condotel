@@ -4,7 +4,7 @@ Started November 13, 2026, following the user's instruction to implement the rev
 
 ## Current state
 
-Tasks 01–24 are implemented locally. The latest full run passed 373 automated checks in 38 files and 110 Chromium desktop/mobile checks. Tasks 25–29 remain. Production services and owner policy approvals are still gated.
+Tasks 01–25 are implemented locally. The latest full run passed 380 automated checks in 39 files and 110 Chromium desktop/mobile checks. Tasks 26–29 remain. Production services and owner policy approvals are still gated.
 
 - Task 01: application foundation implemented. Next.js 16.4.6, Payload 3.93.0, React 19.3.1, TypeScript 5.9.3 and pnpm 12.5.1 are locked.
 - Foundation validation: 19 unit tests passed after five intended positive-path failures; lint and TypeScript checks passed. Application build remains part of Task 02 after migrations.
@@ -31,7 +31,8 @@ Tasks 01–24 are implemented locally. The latest full run passed 373 automated 
 - Task 21 implements staff phone/walk-in bookings with permitted offline collections; Task 22 implements staff-reviewed stay changes and cancellation. Their validation is recorded below.
 - Task 23 implements bounded refunds, voids and offline reimbursements with merchant reconciliation. Validation is recorded below; no real refund, void or bank transfer is claimed.
 - Task 24 implements the staff workspace: Today, room calendar, booking search and details, front-desk stay actions, internal notes, payments queue, enquiry follow-up and reports with protected CSV export. Validation is recorded below.
-- Tasks 25–29 remain pending.
+- Task 25 implements account lifecycle commands with credential and link revocation and candidate retention rules. Validation is recorded below.
+- Tasks 26–29 remain pending.
 
 ## Decision status
 
@@ -223,3 +224,11 @@ Every read and action requires a staff role approved in the candidate `operation
 Validation: all 373 automated checks in 38 files and all 110 Chromium desktop/mobile checks passed in serialized runs. Ten operations and four report integration cases cover role refusal, code lookup and its audit entry, Today lists and range, check-in/out ordering and concurrency, no-show timing with a late arrival, stale revisions, notes kept out of the log, issue resolution, enquiry closure, search, the calendar, report bases across the property-date boundary, CSV formula protection and range limits. Seven browser cases on desktop and phone cover the named lookup check (anonymous 403, staff code returned), code search with a keyboard-submitted note at 320 px, today's arrival checked in from its page, issue resolution, CSV export, refusal for customers and unapproved roles, and enquiry closure with the calendar and anonymous/unapproved probes of every operations write route. Desktop and phone screenshots were inspected in light and dark themes. Lint, TypeScript, diff whitespace, the development migration and the optimized build passed. No real staff account, guest, provider or email was involved.
 
 Real staff accounts, approved roles and operating values, Safari/WebKit and physical-device checks, and staff training remain owner and UAT gates.
+
+## Account lifecycle and revocation — November 19, 2026
+
+Task 25 adds `applyAccountLifecycle` and `revokeCapabilities`. Name and staff-assisted email changes, deactivation, anonymization and developer-only staff removal each check and advance the account's security revision. Revocation ends Payload sessions, recovery tokens, unused claim tokens and account-bound status links; anonymization also revokes the account's booking-view links and scrubs its identity fields while keeping booking, financial and audit evidence. Booking ownership never moves. The [operations guide](deployment.md#account-lifecycle-revocation-and-retention--november-19-2026) records the policy, revocation effects and retention limits.
+
+Validation: all 380 automated checks in 39 files and all 110 Chromium desktop/mobile checks passed in serialized runs. Seven lifecycle integration cases cover the named check (an old session gets 401 after an email change while booking ownership stays with the original account, and a recreated account with the old email has no history), deactivation revoking sessions, recovery tokens, claims and status links while keeping paid stays, anonymization keeping financial and audit evidence, developer-only staff removal that keeps one developer and restores no role, one winner between concurrent changes, policy refusals and a claim racing deactivation. The race test was shown to fail when claim revocation is removed. Task 09's upgrade test now seeds its historical customer with SQL. Lint, TypeScript, diff whitespace, the development migration and the optimized build passed. No real customer or staff account was changed.
+
+Customer and staff screens for these commands, the approved lifecycle and retention policies, and verified customer self-service email change remain Decision 05, 07 and 08 gates.
