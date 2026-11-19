@@ -5,29 +5,29 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
    CREATE TYPE "public"."enum_stay_events_kind" AS ENUM('checked-in', 'checked-out', 'no-show');
   CREATE TYPE "public"."enum_enquiries_follow_up_outcome" AS ENUM('contacted', 'booked', 'not-pursued', 'duplicate');
   CREATE TABLE "stay_events" (
-  	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-  	"command_key" varchar NOT NULL,
-  	"fingerprint" varchar NOT NULL,
-  	"booking_id" uuid NOT NULL,
-  	"kind" "enum_stay_events_kind" NOT NULL,
-  	"property_date" varchar NOT NULL,
-  	"booking_revision" numeric NOT NULL,
-  	"staff_id" uuid NOT NULL,
-  	"occurred_at" timestamp(3) with time zone NOT NULL,
-  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+    "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    "command_key" varchar NOT NULL,
+    "fingerprint" varchar NOT NULL,
+    "booking_id" uuid NOT NULL,
+    "kind" "enum_stay_events_kind" NOT NULL,
+    "property_date" varchar NOT NULL,
+    "booking_revision" numeric NOT NULL,
+    "staff_id" uuid NOT NULL,
+    "occurred_at" timestamp(3) with time zone NOT NULL,
+    "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+    "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
   CREATE TABLE "staff_notes" (
-  	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-  	"command_key" varchar NOT NULL,
-  	"fingerprint" varchar NOT NULL,
-  	"booking_id" uuid,
-  	"enquiry_id" uuid,
-  	"staff_id" uuid NOT NULL,
-  	"text" varchar NOT NULL,
-  	"recorded_at" timestamp(3) with time zone NOT NULL,
-  	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-  	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+    "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    "command_key" varchar NOT NULL,
+    "fingerprint" varchar NOT NULL,
+    "booking_id" uuid,
+    "enquiry_id" uuid,
+    "staff_id" uuid NOT NULL,
+    "text" varchar NOT NULL,
+    "recorded_at" timestamp(3) with time zone NOT NULL,
+    "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+    "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
   ALTER TABLE "enquiries" ADD COLUMN "follow_up_outcome" "enum_enquiries_follow_up_outcome";
   ALTER TABLE "enquiries" ADD COLUMN "closed_at" timestamp(3) with time zone;
