@@ -299,3 +299,16 @@ The user selected D-07 Bright resort from the [three-direction comparison](../su
 - Staff pages share the new colours; their layout is unchanged.
 
 Validation: a new browser check (`presents the selected Bright resort design…`) failed before the change and passes on desktop and phone. All 118 desktop/phone browser checks, lint and TypeScript passed.
+
+## shadcn/ui components in the design language — November 19, 2026
+
+The user asked for the interface controls to use shadcn/ui, styled to follow the Acornelia design language rather than shadcn's stock look. The design language had already planned this ("Production components will use shadcn/ui"); the earlier screens used one hand-written stylesheet instead.
+
+- Tailwind CSS v4 supplies the theme and utilities. Its global preflight reset is not imported, so existing page layouts keep their look; a reset applies only to shadcn elements (`[data-slot]`). The existing site rules sit in a lower `site` cascade layer, so shadcn components and utilities win where they overlap. A few unlayered rules let buttons wrap in narrow, text-heavy panels.
+- `src/components/ui` holds the shadcn/ui (new-york, `radix-ui`) Button, Input, Textarea, Label, NativeSelect, Dialog, Sheet, Table, Alert, Badge and Card, added with the shadcn CLI and tuned to the design language: 8 px corners on buttons and fields, 44 px main actions and icon buttons, 14 px semibold labels and buttons, 16 px field text on phones, 16 px corners on cards and dialogs, 44 px dialog close buttons, and success, warning, information and error variants for badges and alerts.
+- Colour tokens follow `docs/design/acornelia-tokens.css` with shadcn's names for Warm boutique and Bright resort in Day and Night. `--accent` is the soft hover surface shadcn expects; the text-safe brand gold moved to `--gold`, so gold stays a small-detail colour as the design language asks.
+- Every button and button-styled link, text field, select (kept native through NativeSelect), textarea and error message now uses these components. Phone navigation opens in a Sheet, room photos open in a Dialog, staff tables use Table, and booking and stay states show as Badges whose words carry the meaning. Checkbox consent fields stay native so forms submit unchanged; text links and page layouts keep their site styles. Status panels now use 16 px card corners.
+- On narrow phones a long property name truncates so the 44 px header controls keep their size.
+- Payload's admin keeps its own styles; theming it to the design language remains separate work. The date fields stay native rather than the shadcn calendar.
+
+Validation: a new browser check (`tests/e2e/design-system.spec.ts`) failed before the change and now passes on desktop and phone. All 122 desktop/phone browser checks, lint, TypeScript and the production build passed.

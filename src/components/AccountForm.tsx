@@ -3,6 +3,11 @@ import {navigateToServerPage} from '@/features/auth/navigation'
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import {safeReturnPath} from '@/features/auth/checkout-handoff'
+import {Button} from '@/components/ui/button'
+import {ArrowUpRight} from 'lucide-react'
+import {Alert,AlertDescription} from '@/components/ui/alert'
+import {Input} from '@/components/ui/input'
+import {Label} from '@/components/ui/label'
 type Mode='login'|'register'|'recover'|'activate'|'reset'
 const labels:Record<Mode,string>={login:'Sign in',register:'Create account',recover:'Send recovery link',activate:'Activate account',reset:'Update password'}
 export function AccountForm({mode,returnTo='/account',email=''}:{mode:Mode;returnTo?:string;email?:string}){
@@ -33,9 +38,9 @@ export function AccountForm({mode,returnTo='/account',email=''}:{mode:Mode;retur
       setSuccess(mode==='activate'?'Your account is ready. Sign in to continue.':mode==='reset'?'Your password has been updated. Sign in with your new password.':result.message)
     }catch(cause){setError(cause instanceof Error?cause.message:'Please try again shortly.')}finally{setBusy(false)}
   }}><div className="enquiry-fields">
-    {(mode==='register'||mode==='activate')&&<label>Your name<input name="name" autoComplete="name" required maxLength={120}/></label>}
-    {['login','register','recover'].includes(mode)&&<label>Email address<input name="email" type="email" autoComplete="email" required maxLength={254} defaultValue={email}/></label>}
-    {mode==='login'&&<label>Password<input name="password" type="password" autoComplete="current-password" required maxLength={128}/></label>}
-    {(mode==='activate'||mode==='reset')&&<><label>New password<input name="password" type="password" autoComplete="new-password" required minLength={12} maxLength={128}/></label><label>Confirm password<input name="confirmation" type="password" autoComplete="new-password" required minLength={12} maxLength={128}/></label><p className="enquiry-note">Use at least 12 characters.</p></>}
-  </div>{error&&<p className="form-error" role="alert">{error}</p>}<button className="button" disabled={busy||!ready} type="submit">{busy?'Please wait…':labels[mode]} <span aria-hidden="true">↗</span></button><div className="account-links">{mode==='login'&&<><Link href={'/account/recover'+query}>Forgot your password?</Link><Link href={'/account/register'+query}>Create an account</Link></>}{mode==='register'&&<Link href={'/account/login'+query}>Already have an account? Sign in</Link>}{mode==='recover'&&<Link href={'/account/login'+query}>Back to sign in</Link>}{['activate','reset'].includes(mode)&&<Link href={mode==='reset'?'/account/recover':'/account/register'}>Request a new link</Link>}{next==='/book'&&<Link href="/book">Continue as guest</Link>}</div></form>
+    {(mode==='register'||mode==='activate')&&<Label>Your name<Input name="name" autoComplete="name" required maxLength={120}/></Label>}
+    {['login','register','recover'].includes(mode)&&<Label>Email address<Input name="email" type="email" autoComplete="email" required maxLength={254} defaultValue={email}/></Label>}
+    {mode==='login'&&<Label>Password<Input name="password" type="password" autoComplete="current-password" required maxLength={128}/></Label>}
+    {(mode==='activate'||mode==='reset')&&<><Label>New password<Input name="password" type="password" autoComplete="new-password" required minLength={12} maxLength={128}/></Label><Label>Confirm password<Input name="confirmation" type="password" autoComplete="new-password" required minLength={12} maxLength={128}/></Label><p className="enquiry-note">Use at least 12 characters.</p></>}
+  </div>{error&&<Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}<Button disabled={busy||!ready} type="submit">{busy?'Please wait…':labels[mode]} <ArrowUpRight aria-hidden="true"/></Button><div className="account-links">{mode==='login'&&<><Link href={'/account/recover'+query}>Forgot your password?</Link><Link href={'/account/register'+query}>Create an account</Link></>}{mode==='register'&&<Link href={'/account/login'+query}>Already have an account? Sign in</Link>}{mode==='recover'&&<Link href={'/account/login'+query}>Back to sign in</Link>}{['activate','reset'].includes(mode)&&<Link href={mode==='reset'?'/account/recover':'/account/register'}>Request a new link</Link>}{next==='/book'&&<Link href="/book">Continue as guest</Link>}</div></form>
 }

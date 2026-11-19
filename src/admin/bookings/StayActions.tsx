@@ -2,6 +2,8 @@
 import {useRef,useState} from 'react'
 import {useRouter} from 'next/navigation'
 import type {StayActionKind} from '@/domain/operations/read'
+import {Button} from '@/components/ui/button'
+import {Alert,AlertDescription} from '@/components/ui/alert'
 const labels:Record<StayActionKind,string>={'check-in':'Check in','check-out':'Check out','no-show':'Record no-show'}
 const done:Record<StayActionKind,string>={'check-in':'Checked in','check-out':'Checked out','no-show':'No-show recorded'}
 /** Front-desk buttons offered by the server for today's property date. The server re-checks every press. */
@@ -18,7 +20,7 @@ export function StayActions({bookingId,revision,actions}:{bookingId:string;revis
   finally{setBusy(null)}
  }
  return <section className="staff-panel" aria-labelledby="front-desk-heading"><h2 id="front-desk-heading">Front desk</h2>
-  {actions.length?<div className="staff-buttons">{actions.map(action=><button key={action} className={action==='no-show'?'button button-quiet':'button'} type="button" disabled={!!busy} onClick={()=>void run(action)}>{busy===action?'Saving…':labels[action]}</button>)}</div>:<p>No front-desk action is available for this booking today.</p>}
-  {status&&<p role="status">{status}</p>}{error&&<p role="alert" className="form-error">{error}</p>}
+  {actions.length?<div className="staff-buttons">{actions.map(action=><Button key={action} variant={action==='no-show'?'outline':'default'} type="button" disabled={!!busy} onClick={()=>void run(action)}>{busy===action?'Saving…':labels[action]}</Button>)}</div>:<p>No front-desk action is available for this booking today.</p>}
+  {status&&<p role="status">{status}</p>}{error&&<Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
  </section>
 }

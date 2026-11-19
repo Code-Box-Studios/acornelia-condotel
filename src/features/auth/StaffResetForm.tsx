@@ -1,6 +1,10 @@
 'use client'
 import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
+import {Button} from '@/components/ui/button'
+import {Alert,AlertDescription} from '@/components/ui/alert'
+import {Input} from '@/components/ui/input'
+import {Label} from '@/components/ui/label'
 export function StaffResetForm(){
   const token=useRef(''),[ready,setReady]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[success,setSuccess]=useState(false)
   useEffect(()=>{if(!token.current){token.current=new URLSearchParams(location.hash.slice(1)).get('token')||'';history.replaceState(null,'',location.pathname)}setReady(!!token.current);if(!token.current)setError('This staff recovery link is invalid or has expired.')},[])
@@ -12,5 +16,5 @@ export function StaffResetForm(){
     try{const response=await fetch('/api/staff-users/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token.current,password})});if(!response.ok)throw new Error('This staff recovery link is invalid or has expired. Request a new link from staff sign-in.');token.current='';setSuccess(true)}
     catch(cause){setError(cause instanceof Error?cause.message:'Please try again shortly.')}
     finally{setBusy(false)}
-  }}><div className="enquiry-fields"><label>New password<input type="password" name="password" autoComplete="new-password" minLength={12} maxLength={128} required/></label><label>Confirm password<input type="password" name="confirmation" autoComplete="new-password" minLength={12} maxLength={128} required/></label></div>{error&&<p role="alert" className="form-error">{error}</p>}<button className="button" type="submit" disabled={!ready||busy}>{busy?'Updating…':'Update staff password'}</button><Link href="/admin/forgot">Staff account recovery</Link></form>
+  }}><div className="enquiry-fields"><Label>New password<Input type="password" name="password" autoComplete="new-password" minLength={12} maxLength={128} required/></Label><Label>Confirm password<Input type="password" name="confirmation" autoComplete="new-password" minLength={12} maxLength={128} required/></Label></div>{error&&<Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}<Button type="submit" disabled={!ready||busy}>{busy?'Updating…':'Update staff password'}</Button><Link href="/admin/forgot">Staff account recovery</Link></form>
 }

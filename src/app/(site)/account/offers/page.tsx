@@ -5,6 +5,7 @@ import {customerPageContext} from '@/features/customer/page-context'
 import {readMyOffers} from '@/features/customer/offers'
 import {formatMoney} from '@/domain/shared/money'
 import type {OfferTerms} from '@/domain/offers/types'
+import {Button} from '@/components/ui/button'
 export const metadata={title:'My offers',robots:{index:false,follow:false}}
 function benefit(terms:OfferTerms){return terms.benefit.kind==='fixed'?formatMoney({minor:terms.benefit.minor,currency:terms.currency})+' off':`${Math.floor(terms.benefit.bps/100)}.${String(terms.benefit.bps%100).padStart(2,'0')}% off`}
 export default async function Offers(){
@@ -21,7 +22,7 @@ export default async function Offers(){
       {item.terms.perAccountLimit!==null&&<li>Up to {item.terms.perAccountLimit} {item.terms.perAccountLimit===1?'use':'uses'} per account.</li>}
       {item.terms.overallLimit!==null&&<li>Limited to {item.terms.overallLimit} total uses.</li>}
       <li>One offer per checkout. Pending bookings count toward usage limits.</li><li>{item.terms.usage.cancelled==='retain'?'Cancellation does not restore this offer use.':'Offer use can be restored after an effective cancellation.'}</li></ul>
-      {item.status==='available'?<Link className="button secondary" href="/rooms">Find a stay</Link>:<p className="offer-status">{item.status==='exhausted'?'This offer has been fully claimed.':'Your usage limit for this offer is reached. Check your current bookings.'}</p>}
+      {item.status==='available'?<Button asChild variant="outline"><Link href="/rooms">Find a stay</Link></Button>:<p className="offer-status">{item.status==='exhausted'?'This offer has been fully claimed.':'Your usage limit for this offer is reached. Check your current bookings.'}</p>}
     </article>)}</div>:<section className="status-panel"><h2>No current offers.</h2><p>When Acornelia publishes account offers, you’ll find them here.</p><div className="account-links"><Link href="/rooms">Explore our stays ↗</Link></div></section>}
     <p className="history-help">Creating an account does not subscribe you to promotional email or SMS. Offer availability and usage rules apply.</p><SignOut/>
   </AccountShell>

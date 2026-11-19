@@ -4,6 +4,7 @@ import {SignOut} from '@/components/SignOut'
 import {customerPageContext} from '@/features/customer/page-context'
 import {listOwnBookings} from '@/features/customer/bookings'
 import {formatMoney} from '@/domain/shared/money'
+import {Button} from '@/components/ui/button'
 export const metadata={title:'My bookings',robots:{index:false,follow:false}}
 export default async function Bookings({searchParams}:{searchParams:Promise<{cursor?:string}>}){
   const ctx=await customerPageContext(),{cursor}=await searchParams
@@ -15,7 +16,7 @@ export default async function Bookings({searchParams}:{searchParams:Promise<{cur
       <h2>{item.code||'Your reservation'}</h2><p>{item.arrival} – {item.departure}</p>
       <Link className="text-link" href={'/account/bookings/'+item.id}>View booking {item.code||'details'} <span aria-hidden="true">↗</span></Link>
     </article>)}</div>:<section className="status-panel"><h2>No bookings yet.</h2><p>When you book with your account, your stays will appear here.</p></section>}
-    {page.nextCursor&&<div className="account-links"><Link className="button secondary" href={'/account/bookings?cursor='+encodeURIComponent(page.nextCursor)}>Older bookings</Link></div>}
+    {page.nextCursor&&<div className="account-links"><Button asChild variant="outline"><Link href={'/account/bookings?cursor='+encodeURIComponent(page.nextCursor)}>Older bookings</Link></Button></div>}
     <aside className="history-help"><h2>Booked as a guest?</h2><p>Earlier guest bookings need a separate ownership review. Matching contact details do not add them to your account. Online claims are not available yet.</p><Link className="text-link" href="/contact">Contact Acornelia ↗</Link></aside>
     <SignOut/>
   </AccountShell>

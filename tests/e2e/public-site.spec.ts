@@ -118,7 +118,7 @@ test('keeps key text and button colors readable in both themes',async({page})=>{
       document.documentElement.dataset.theme=theme
       function luminance(color:string){const channels=color.match(/[\d.]+/g)!.slice(0,3).map(x=>{const c=Number(x)/255;return c<=.04045?c/12.92:((c+.055)/1.055)**2.4});return channels[0]*.2126+channels[1]*.7152+channels[2]*.0722}
       const background=getComputedStyle(document.body).backgroundColor
-      return ['.hero .eyebrow','.hero-description','.hero-actions .button'].map(selector=>{const style=getComputedStyle(document.querySelector(selector)!);const a=luminance(style.color),b=luminance(selector.includes('button')?style.backgroundColor:background);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05)})
+      return ['.hero .eyebrow','.hero-description','.hero-actions [data-slot=button]'].map(selector=>{const style=getComputedStyle(document.querySelector(selector)!);const a=luminance(style.color),b=luminance(selector.includes('button')?style.backgroundColor:background);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05)})
     },theme)
     for(const ratio of ratios)expect(ratio).toBeGreaterThanOrEqual(4.5)
   }

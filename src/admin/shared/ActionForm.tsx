@@ -1,6 +1,11 @@
 'use client'
 import {useId,useRef,useState} from 'react'
 import {useRouter} from 'next/navigation'
+import {Button} from '@/components/ui/button'
+import {Alert,AlertDescription} from '@/components/ui/alert'
+import {Input} from '@/components/ui/input'
+import {NativeSelect,NativeSelectOption} from '@/components/ui/native-select'
+import {Textarea} from '@/components/ui/textarea'
 export type ActionField={name:string;label:string;kind:'text'|'textarea'|'select'|'date'|'money';options?:{value:string;label:string}[];required?:boolean;maxLength?:number;hint?:string;defaultValue?:string}
 type Props={endpoint:string;envelope?:string;fields?:ActionField[];fixed?:Record<string,unknown>;submitLabel:string;successMessage:string;idempotent?:boolean;onSuccess?:(message:string)=>void;className?:string;tone?:'primary'|'quiet'}
 /** Converts a peso amount with at most two decimals into exact minor units. */
@@ -30,11 +35,11 @@ export function ActionForm({endpoint,envelope,fields=[],fixed={},submitLabel,suc
  return <form className={'staff-action '+(className??'')} aria-busy={busy} onSubmit={event=>{event.preventDefault();void submit(event.currentTarget)}}>
   {fields.map(field=>{const control=id+field.name,hint=field.hint?control+'-hint':undefined
    return <div key={field.name} className="staff-field"><label htmlFor={control}>{field.label}</label>
-    {field.kind==='textarea'?<textarea id={control} name={field.name} required={field.required} maxLength={field.maxLength} defaultValue={field.defaultValue} rows={3} aria-describedby={hint}/>
-    :field.kind==='select'?<select id={control} name={field.name} required={field.required} defaultValue={field.defaultValue??''} aria-describedby={hint}><option value="" disabled>Choose…</option>{field.options?.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}</select>
-    :<input id={control} name={field.name} type={field.kind==='date'?'date':'text'} inputMode={field.kind==='money'?'decimal':undefined} required={field.required} maxLength={field.maxLength} defaultValue={field.defaultValue} aria-describedby={hint}/>}
+    {field.kind==='textarea'?<Textarea id={control} name={field.name} required={field.required} maxLength={field.maxLength} defaultValue={field.defaultValue} rows={3} aria-describedby={hint}/>
+    :field.kind==='select'?<NativeSelect id={control} name={field.name} required={field.required} defaultValue={field.defaultValue??''} aria-describedby={hint}><NativeSelectOption value="" disabled>Choose…</NativeSelectOption>{field.options?.map(option=><NativeSelectOption key={option.value} value={option.value}>{option.label}</NativeSelectOption>)}</NativeSelect>
+    :<Input id={control} name={field.name} type={field.kind==='date'?'date':'text'} inputMode={field.kind==='money'?'decimal':undefined} required={field.required} maxLength={field.maxLength} defaultValue={field.defaultValue} aria-describedby={hint}/>}
     {field.hint&&<small id={hint}>{field.hint}</small>}</div>})}
-  <button className={tone==='primary'?'button':'button button-quiet'} type="submit" disabled={busy}>{busy?'Saving…':submitLabel}</button>
-  {status&&<p role="status">{status}</p>}{error&&<p role="alert" className="form-error">{error}</p>}
+  <Button variant={tone==='primary'?'default':'outline'} type="submit" disabled={busy}>{busy?'Saving…':submitLabel}</Button>
+  {status&&<p role="status">{status}</p>}{error&&<Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
  </form>
 }

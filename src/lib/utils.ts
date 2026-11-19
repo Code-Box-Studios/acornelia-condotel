@@ -1,4 +1,2 @@
-import {clsx,type ClassValue} from 'clsx'
-import {twMerge} from 'tailwind-merge'
-/** Merges conditional class names and resolves conflicting Tailwind utilities (shadcn/ui convention). */
-export function cn(...inputs:ClassValue[]){return twMerge(clsx(inputs))}
+// shadcn/ui's class merger: conditional class names with conflicting Tailwind utilities resolved.
+export {cn} from 'cn'
