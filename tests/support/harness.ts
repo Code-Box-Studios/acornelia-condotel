@@ -30,9 +30,14 @@ export async function createHarness(options:{databaseUrl?:string;migrate?:boolea
     async seed<C extends CollectionSlug>(collection:C,data:SeedInput<C>){const seeded={...(collection==='customers'||collection==='staff-users'?{securityRevision:1}:{}),...data} as RequiredDataFromCollectionSlug<C>;return payload.create({collection,data:seeded,disableVerificationEmail:true,overrideAccess:true})},
     async rows<C extends CollectionSlug>(collection:C,where:Where={}){return (await payload.find({collection,where,limit:1000,depth:0,overrideAccess:true})).docs},
     async reset(){
-      const tables=await pool.query("select tablename from pg_tables where schemaname='public' and tablename<>'payload_migrations'")
+      const tables=await pool.query("select tablename from pg_tables where schemaname='public' and tablename<>'payload_migrations' order by tablename")
       const quoted=tables.rows.map((r:{tablename:string})=>'"'+r.tablename.replaceAll('"','""')+'"').join(',')
-      if(quoted)await pool.query('TRUNCATE TABLE '+quoted+' CASCADE')
+      // The browser server may still be finishing the previous test's request; when its transaction locks tables in
+      // another order, PostgreSQL aborts this TRUNCATE as the deadlock victim, so retry once that request finishes.
+      if(quoted)for(let attempt=1;;attempt++){
+        try{await pool.query('TRUNCATE TABLE '+quoted+' CASCADE');break}
+        catch(error){if((error as {code?:string}).code!=='40P01'||attempt>=5)throw error;await new Promise(resolve=>setTimeout(resolve,100*attempt))}
+      }
       // Restore the initial recovery generation that the migration seeds, so tests run unfenced.
       if(tables.rows.some((r:{tablename:string})=>r.tablename==='recovery_fences'))await pool.query("INSERT INTO recovery_fences(generation,operator,authorized_at,permit) VALUES('1','test-reset',now(),'{}')")
     },
