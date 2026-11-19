@@ -4,7 +4,7 @@ Started November 13, 2026, following the user's instruction to implement the rev
 
 ## Current state
 
-Tasks 01–26 and the local part of Task 27 are implemented. The latest full run passed 401 automated checks in 43 files (including the recovery rehearsal) and 114 Chromium desktop/mobile checks. The rest of Task 27 and Tasks 28–29 remain. Production services and owner policy approvals are still gated.
+Tasks 01–26 and every Task 27 step that needs no provider account are implemented. The latest full run passed 407 automated checks in 45 files (including the recovery rehearsal) and 116 Chromium desktop/mobile checks, and the first GitHub CI run passed. Task 27's hosted steps and Tasks 28–29 remain. Production services and owner policy approvals are still gated.
 
 - Task 01: application foundation implemented. Next.js 16.4.6, Payload 3.93.0, React 19.3.1, TypeScript 5.9.3 and pnpm 12.5.1 are locked.
 - Foundation validation: 19 unit tests passed after five intended positive-path failures; lint and TypeScript checks passed. Application build remains part of Task 02 after migrations.
@@ -264,3 +264,18 @@ A fresh reviewer examined Tasks 23–27 and found two critical and eight importa
 - The restore rehearsal now covers a staff removal, an email change and an anonymization after the backup. Rebuilding bookings and payments made after a backup stays a manual, documented step pending Decision 10.
 
 Validation: all 401 automated checks in 43 files and all 114 Chromium desktop/mobile checks passed in serialized runs, with lint, TypeScript, diff whitespace, the development migrations (`20261119_130748_refund_checks`, `20261119_131742_recovery_holds`) and the optimized build. Each fix was first shown by a failing test. The reviewer's minor findings are recorded for later work.
+
+## Data API restriction, security baseline and sandbox gate — November 19, 2026
+
+Task 27 continues with the steps that need no provider account. The [operations guide](deployment.md#data-api-restriction-security-baseline-and-sandbox-checks--november-19-2026) has the details and limits.
+
+- Migration `20261119_150000_restrict_data_api` turns on row level security for every application table and removes the Supabase Data API roles' grants. A test fails whenever a table lacks row level security, so each new table's migration must enable it.
+- Every response carries `Strict-Transport-Security` and a baseline `Content-Security-Policy` covering framing, `<base>` and plugins.
+- `sharp` moved to 0.35.5, removing three high-severity advisories. The eight remaining advisories are recorded with the reason each is accepted.
+- `pnpm test:sandbox` holds gated Maya, email, runner and media checks. They run only with `SANDBOX_AUTHORIZED=yes` against a target that verifies as an isolated preview. None has run against a real provider.
+
+The first GitHub CI run (commit `cb8b297`) passed 401 automated and 114 browser checks.
+
+Validation: `pnpm test:recovery` passed 407 checks in 45 files and `pnpm test:e2e` passed 116 desktop/phone checks. Lint, TypeScript, diff whitespace, the development migration and the optimized build passed. Without authorization `pnpm test:sandbox` skipped all four files; authorized without settings, it stopped and named the missing settings. The Data API, header and sandbox-gate tests each failed before their fixes.
+
+Still hosted and still needing authorization: preview resources, disabling the Data API in each project, reviewed hosted migrations, the sandbox run and deployment evidence.
