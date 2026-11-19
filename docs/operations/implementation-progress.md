@@ -279,3 +279,11 @@ The first GitHub CI run (commit `cb8b297`) passed 401 automated and 114 browser 
 Validation: `pnpm test:recovery` passed 407 checks in 45 files and `pnpm test:e2e` passed 116 desktop/phone checks. Lint, TypeScript, diff whitespace, the development migration and the optimized build passed. Without authorization `pnpm test:sandbox` skipped all four files; authorized without settings, it stopped and named the missing settings. The Data API, header and sandbox-gate tests each failed before their fixes.
 
 Still hosted and still needing authorization: preview resources, disabling the Data API in each project, reviewed hosted migrations, the sandbox run and deployment evidence.
+
+## Acceptance register and checker — November 19, 2026
+
+Task 28's local part adds the [acceptance requirements register](../acceptance/requirements.md), [recorded evidence](../acceptance/evidence.md) and a proposed [UAT plan](../acceptance/uat.md). `pnpm verify:acceptance --revision <commit> --environment <name>` exits 0 only when each of the 38 requirements has passing evidence for that revision and every release blocker is resolved. `pnpm verify:acceptance record` turns vitest and Playwright JSON reports into one recorded outcome per test file. Five unit cases cover the checker, including the named check that all 38 IDs are present and that missing evidence fails; each failed first.
+
+Run against commit `08fb870` in `preview` before any evidence was recorded, the checker listed 68 problems: 50 automated evidence references without a recorded result, 12 missing hosted or human checks, and 6 open release blockers. That is the expected result, not a defect.
+
+The cross-role acceptance journey test (`tests/e2e/acceptance.spec.ts`) waits for the owner's approved rules. Owner decisions, the hosted Task 27 steps, staff training, UAT and Client acceptance remain, and the register lists them as release blockers.

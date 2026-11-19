@@ -1,6 +1,6 @@
 # Acornelia project documentation
 
-**Updated:** November 16, 2026.
+**Updated:** November 19, 2026.
 
 Acornelia implementation has started from the reviewed plan. The repository also contains specifications, interactive mockups and owner questionnaires. See [implementation progress](operations/implementation-progress.md) for actual checks and pending work. Production deployment and provider connections have not been verified.
 
@@ -15,6 +15,7 @@ The selected stack is **Next.js, TypeScript, Payload CMS, Vercel, Supabase Postg
 | [November 12 specification review](architecture/2026-11-12-specification-review.md) · [Browser review](../.lavish/acornelia-spec-review.html) · [Portable report](../deliverables/Acornelia-Specification-Review-2026-11-12.html) | Historical eight-finding review of the [preserved November 12 specification](superpowers/plans/2026-11-12-acornelia-website-plan-before-consolidation.md). Its verification hashes apply to that snapshot. The safeguards are retained in v2. |
 | [Hosting and database cost review — November 11](architecture/2026-11-11-hosting-and-database-options.md) | Historical alternatives, Supabase Free/Pro and domain guidance. The user retained the original Vercel/Supabase/Brevo plan. |
 | [Implementation progress](operations/implementation-progress.md) | Completed implementation tasks, local validation evidence, pending owner decisions and provider/release gates. |
+| [Acceptance requirements register](acceptance/requirements.md) · [Recorded evidence](acceptance/evidence.md) · [UAT plan](acceptance/uat.md) | The 38 acceptance requirements with the evidence each needs, actual results by revision and environment, release blockers, and the proposed owner UAT sessions. `pnpm verify:acceptance` fails until every requirement and blocker is satisfied. |
 | [Stay changes and cancellation](operations/deployment.md#staff-reviewed-stay-changes-and-cancellation--november-16-2026) | Staff-reviewed agreement, revision binding, atomic room replacement, supplemental payment, separate refund review and approval gates. |
 | [Staff direct-booking operating requirements](operations/deployment.md#staff-direct-bookings-and-offline-collections--november-16-2026) | Shared pricing and room capacity, staff-attested receipts, paid exceptions, safe lost-response recovery and owner approval gates. |
 | [Staff workspace guide](operations/staff-workspace-guide.md) | Plain-language procedures for arrivals, check-in/out, no-shows, notes, payment issues, refunds, enquiries, reports and room blocks in the staff workspace. |
