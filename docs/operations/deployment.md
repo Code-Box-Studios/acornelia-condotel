@@ -68,6 +68,9 @@ The following is a proposed application configuration contract. `DATABASE_URL` a
 | `APP_URL` | Proposed canonical HTTPS origin for booking and password-reset links. | Use the correct origin for each environment and validate generated links. |
 | Maya configuration | Environment, API credentials, callback URLs, and webhook security settings. | Store secrets server-side. Confirm exact application variable names and account requirements during implementation. |
 | `WORK_RUNNER_SECRET` | At least 32 characters; authenticates `POST /api/internal/work` using a Bearer header. | Secret, server only; separate per environment. External scheduler selection remains pending. |
+| `APP_OPERATION_MODE` | Recovery fence stage: `quarantine` (default when unset), `reconcile` or `normal`. | Set outside the database. Start every restored environment in `quarantine`; see the [recovery runbook](recovery-runbook.md). |
+| `APP_RECOVERY_GENERATION` | The generation the database must have accepted before normal service; default `1`. | Set outside the database. Use a new, never-reused label for each restore. |
+| `RECOVERY_OPERATOR_KEY` | At least 32 characters; signs the operator's resumption evidence. | Secret, held by the named recovery operator only; never stored in the database, backups or chat. |
 | Photo-storage configuration | Bucket/store identifier, delivery URL, and access credentials. | Document exact names after provider selection; keep write credentials server-side. |
 
 Configure the required Development, Preview, and Production scopes deliberately. Preview builds must not charge real guests, send unintended real notifications, or write to the live booking database. Keep credentials and private connection strings out of Git, mockups, questionnaire exports, logs, and documentation.
@@ -543,3 +546,11 @@ Task 25 adds `applyAccountLifecycle` for customer and staff accounts under a can
 **Recovery evidence.** Every lifecycle action and revocation is logged with its reason and the new security revision, without email addresses or names. Task 26 uses these revisions to refuse credentials, links and sessions restored from an older backup.
 
 Migration `20261119_115023_account_lifecycle` adds `customers.anonymized_at` and `staff_users.security_revision` (NOT NULL, default 1) with the protecting triggers. Payload treats the staff revision as optional so ordinary staff creation keeps working; the database default supplies 1, and the migration snapshot records that view so future generated migrations do not try to drop the constraint.
+
+## Recovery quarantine and resumption — November 19, 2026
+
+Task 26 implements the recovery fence described above. `APP_OPERATION_MODE` and `APP_RECOVERY_GENERATION` live outside the database; the database records the generations it has accepted in the append-only `recovery_fences` table, seeded with `1` by migration `20261119_121350_recovery_fences`. Normal service requires the `normal` mode and a matching generation, so a restored copy stays fenced. Protected API routes, Payload's REST API, staff and customer pages and the work queue check the fence. Fenced routes return 503, and fenced workers claim nothing, so no payment, refund or email leaves the system. The Maya webhook still stores authenticated notifications during quarantine; processing waits.
+
+The `reconcile` stage lets only the recovery operator read Maya and apply merchant-verified payments and refunds (`scripts/recovery/reconcile.ts`). Resumption (`scripts/recovery/authorize-resumption.ts`) needs evidence signed with `RECOVERY_OPERATOR_KEY`. It runs only while the service is fenced and only for the current external generation. It gives every account a random password and new security revision, ends sessions, voids tokens and claims, revokes private links, and quarantines unsent outbound work, then records the permit. The [recovery runbook](recovery-runbook.md) is the operator procedure.
+
+Not verified: a real backup provider, restore duration, scheduler behaviour after a restore, hosted media restore, and the named operator and targets, all pending Decision 10 and Task 27. The rehearsal ran only against the isolated local test database.

@@ -28,6 +28,7 @@ import * as migration_20261116_035134_refund_operations from './20261116_035134_
 import * as migration_20261116_041746_refund_evidence from './20261116_041746_refund_evidence';
 import * as migration_20261119_111300_operations_workspace from './20261119_111300_operations_workspace';
 import * as migration_20261119_115023_account_lifecycle from './20261119_115023_account_lifecycle';
+import * as migration_20261119_121350_recovery_fences from './20261119_121350_recovery_fences';
 
 export const migrations = [
   {
@@ -178,6 +179,11 @@ export const migrations = [
   {
     up: migration_20261119_115023_account_lifecycle.up,
     down: migration_20261119_115023_account_lifecycle.down,
-    name: '20261119_115023_account_lifecycle'
+    name: '20261119_115023_account_lifecycle',
+  },
+  {
+    up: migration_20261119_121350_recovery_fences.up,
+    down: migration_20261119_121350_recovery_fences.down,
+    name: '20261119_121350_recovery_fences'
   },
 ];

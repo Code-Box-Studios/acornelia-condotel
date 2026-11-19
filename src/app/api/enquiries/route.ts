@@ -1,9 +1,10 @@
+import {fenced} from '@/http/fence'
 import {ZodError} from 'zod'
 import {requestContext} from '@/features/auth/context'
 import {submitEnquiry,type EnquiryInput} from '@/content/posts'
 import {readBoundedJson} from '@/http/body'
 const headers={'Cache-Control':'private, no-store'}
-export async function POST(request:Request){
+async function handlePOST(request:Request){
   try{const input=await readBoundedJson(request),ctx=await requestContext(request),id=await submitEnquiry(ctx,input as EnquiryInput);return Response.json({id,state:'received'},{status:201,headers})}
   catch(error){
     const message=error instanceof Error?error.message:''
@@ -13,3 +14,4 @@ export async function POST(request:Request){
     return Response.json({error:'Enquiries are temporarily unavailable. Please try again shortly.'},{status:503,headers})
   }
 }
+export const POST=fenced('business-write',handlePOST)

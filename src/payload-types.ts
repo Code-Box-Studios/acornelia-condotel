@@ -68,6 +68,7 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    'recovery-fences': RecoveryFence;
     'stay-events': StayEvent;
     'staff-notes': StaffNote;
     'refund-evidence': RefundEvidence;
@@ -110,6 +111,7 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    'recovery-fences': RecoveryFencesSelect<false> | RecoveryFencesSelect<true>;
     'stay-events': StayEventsSelect<false> | StayEventsSelect<true>;
     'staff-notes': StaffNotesSelect<false> | StaffNotesSelect<true>;
     'refund-evidence': RefundEvidenceSelect<false> | RefundEvidenceSelect<true>;
@@ -209,6 +211,28 @@ export interface CustomerAuthOperations {
     email: string;
     password: string;
   };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "recovery-fences".
+ */
+export interface RecoveryFence {
+  id: string;
+  generation: string;
+  previousGeneration?: string | null;
+  operator: string;
+  authorizedAt: string;
+  permit:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1233,6 +1257,10 @@ export interface PayloadLockedDocument {
   id: string;
   document?:
     | ({
+        relationTo: 'recovery-fences';
+        value: string | RecoveryFence;
+      } | null)
+    | ({
         relationTo: 'stay-events';
         value: string | StayEvent;
       } | null)
@@ -1423,6 +1451,19 @@ export interface PayloadMigration {
   batch?: number | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "recovery-fences_select".
+ */
+export interface RecoveryFencesSelect<T extends boolean = true> {
+  generation?: T;
+  previousGeneration?: T;
+  operator?: T;
+  authorizedAt?: T;
+  permit?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

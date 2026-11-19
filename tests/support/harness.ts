@@ -33,6 +33,8 @@ export async function createHarness(options:{databaseUrl?:string;migrate?:boolea
       const tables=await pool.query("select tablename from pg_tables where schemaname='public' and tablename<>'payload_migrations'")
       const quoted=tables.rows.map((r:{tablename:string})=>'"'+r.tablename.replaceAll('"','""')+'"').join(',')
       if(quoted)await pool.query('TRUNCATE TABLE '+quoted+' CASCADE')
+      // Restore the initial recovery generation that the migration seeds, so tests run unfenced.
+      if(tables.rows.some((r:{tablename:string})=>r.tablename==='recovery_fences'))await pool.query("INSERT INTO recovery_fences(generation,operator,authorized_at,permit) VALUES('1','test-reset',now(),'{}')")
     },
     async close(){await payload.destroy();await owned.close();await pool.end()},
   }

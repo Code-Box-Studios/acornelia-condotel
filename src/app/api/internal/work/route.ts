@@ -1,3 +1,4 @@
+import {fenced} from '@/http/fence'
 import {createHash,randomUUID,timingSafeEqual} from 'node:crypto'
 import {z} from 'zod'
 import {readBoundedJson} from '@/http/body'
@@ -14,7 +15,7 @@ export const runtime='nodejs'
 export const maxDuration=300
 const body=z.object({kind:z.enum(workKinds).optional(),maxJobs:z.number().int().min(1).max(100).optional()}).strict()
 const response=(data:unknown,status:number)=>Response.json(data,{status,headers:{'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}})
-export async function POST(request:Request){
+async function handlePOST(request:Request){
   const secret=process.env.WORK_RUNNER_SECRET,authorization=request.headers.get('authorization')||''
   if(!secret||secret.length<32)return response({error:'Work runner is unavailable.'},503)
   const digest=(value:string)=>createHash('sha256').update(value).digest()
@@ -30,3 +31,4 @@ export async function POST(request:Request){
     return response(stats,200)
   }catch{return response({error:'Work is unavailable; inspect protected operation status.'},503)}
 }
+export const POST=fenced('worker',handlePOST)

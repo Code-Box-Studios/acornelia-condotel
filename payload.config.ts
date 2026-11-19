@@ -1,3 +1,4 @@
+import {RecoveryFences} from './src/payload/collections/RecoveryFences'
 import {StayEvents} from './src/payload/collections/StayEvents'
 import {StaffNotes} from './src/payload/collections/StaffNotes'
 import {RefundEvidence} from './src/payload/collections/RefundEvidence'
@@ -51,7 +52,7 @@ export function createPayloadConfig(databaseUrl=process.env.DATABASE_URL,driver?
   serverURL:process.env.APP_URL || 'http://localhost:3042',
   admin:{user:'staff-users',importMap:{baseDir:dirname}},
   globals:[Property,SitePages,Policies].map(withGlobalStaffAudit),
-  collections:[StayEvents,StaffNotes,RefundEvidence,RefundOperations,BookingChanges,DirectCommandClosures,Offers,OfferVersions,RatePlans,Quotes,PolicyVersions,RoomBlocks,BookingClaims,BookingViews,AuthTokens,AuthDeliveries,EmailMessages,AuthThrottles,CheckoutDrafts,Posts,Enquiries,RoomTypes,Media,StaffUsers,Customers,Rooms,Bookings,Allocations,OfferAllocations,PaymentAttempts,PaymentTransactions,PaymentInbox,PaymentIssues,AuditEntries,WorkItems].map(withStaffAudit), editor:lexicalEditor(),sharp,
+  collections:[RecoveryFences,StayEvents,StaffNotes,RefundEvidence,RefundOperations,BookingChanges,DirectCommandClosures,Offers,OfferVersions,RatePlans,Quotes,PolicyVersions,RoomBlocks,BookingClaims,BookingViews,AuthTokens,AuthDeliveries,EmailMessages,AuthThrottles,CheckoutDrafts,Posts,Enquiries,RoomTypes,Media,StaffUsers,Customers,Rooms,Bookings,Allocations,OfferAllocations,PaymentAttempts,PaymentTransactions,PaymentInbox,PaymentIssues,AuditEntries,WorkItems].map(withStaffAudit), editor:lexicalEditor(),sharp,
   db:postgresAdapter({pg:driver,pool:{connectionString:databaseUrl,max:8},idType:'uuid',push:false,disableCreateDatabase:true,migrationDir:path.resolve(dirname,'src/migrations'),transactionOptions:{isolationLevel:'serializable'}}),
   typescript:{outputFile:path.resolve(dirname,'src/payload-types.ts')},
   csrf:[process.env.APP_URL || 'http://localhost:3042'],

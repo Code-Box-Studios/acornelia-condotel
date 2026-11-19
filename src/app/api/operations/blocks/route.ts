@@ -1,3 +1,4 @@
+import {fenced} from '@/http/fence'
 import {z} from 'zod'
 import {requestContext} from '@/features/auth/context'
 import {readBoundedJson} from '@/http/body'
@@ -8,7 +9,7 @@ const schema=z.discriminatedUnion('action',[
  z.object({action:z.literal('release'),blockId:z.uuid()}).strict(),
 ])
 /** Room blocks keep the inventory module's own developer and policy checks. */
-export async function POST(request:Request){
+async function handlePOST(request:Request){
  try{
   const ctx=await requestContext(request);if(ctx.actor.kind!=='staff')return staffDenied()
   const value=schema.parse(await readBoundedJson(request))
@@ -16,3 +17,4 @@ export async function POST(request:Request){
   await releaseRoomBlock(ctx,value.blockId);return staffJson({state:'released'})
  }catch(error){return staffFailure(error)}
 }
+export const POST=fenced('authentication',handlePOST)

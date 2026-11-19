@@ -21,3 +21,14 @@ export function configuredMayaGateway(input:PolicySnapshot,options:{requireCheck
     return createMayaGateway({environment:environment.mayaEnvironment,appEnv:environment.appEnv,appUrl:environment.appUrl,publicKey:process.env.MAYA_PUBLIC_KEY||'',secretKey:process.env.MAYA_SECRET_KEY||'',timeoutMs:settings.timeoutMs,capabilities:{environment:settings.environment,approvalReference:settings.approvalReference,checkoutEnabled:settings.checkoutEnabled,kountEnabled:settings.kountEnabled,voidEnabled:settings.voidEnabled,refundEnabled:settings.refundEnabled,partialRefunds:settings.partialRefunds,moneyMethods:settings.moneyMethods,maxAmountMinor:settings.maxAmountMinor}})
   }catch{return null}
 }
+/** Read-only merchant access for the recovery operator during the reconcile stage; money calls are refused. */
+export function recoveryReadGateway(input:PolicySnapshot):MayaGateway|null{
+  try{
+    const environment=parseEnvironment(process.env)
+    if(environment.operationMode!=='reconcile')return null
+    const policy=parseRuntimePolicy(input,['maya']),settings=schema.parse(policy.sections.maya)
+    if(settings.environment!==environment.mayaEnvironment)return null
+    const gateway=createMayaGateway({environment:environment.mayaEnvironment,appEnv:environment.appEnv,appUrl:environment.appUrl,publicKey:process.env.MAYA_PUBLIC_KEY||'',secretKey:process.env.MAYA_SECRET_KEY||'',timeoutMs:settings.timeoutMs,capabilities:{environment:settings.environment,approvalReference:settings.approvalReference,checkoutEnabled:false,kountEnabled:false,voidEnabled:false,refundEnabled:false,partialRefunds:false,moneyMethods:[],maxAmountMinor:settings.maxAmountMinor}})
+    return {...gateway,createCheckout:async()=>({kind:'refused',reason:'configuration'}),refundPayment:async()=>({kind:'refused',reason:'configuration'}),voidPayment:async()=>({kind:'refused',reason:'configuration'})}
+  }catch{return null}
+}

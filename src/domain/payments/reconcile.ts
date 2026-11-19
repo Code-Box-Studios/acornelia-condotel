@@ -1,3 +1,4 @@
+import {systemModeAllowed} from '@/config/operation-mode'
 import {z} from 'zod'
 import type {PaymentAttempt} from '@/payload-types'
 import type {CommandContext,DbTx} from '@/domain/db/types'
@@ -19,7 +20,7 @@ import {attemptIssue} from './exceptions'
 import {enqueue} from '@/domain/work/enqueue'
 import {appendAudit} from '@/domain/audit/append'
 export type ReconcileResult={state:'checking'|'confirmed'|'closed'|'escalated'|'issue';attemptId:string;deadline:string;retryAt?:string|null}
-function authority(ctx:CommandContext){if(ctx.actor.kind!=='system'||!['payments','work','recovery'].includes(ctx.actor.purpose)||parseEnvironment(process.env).operationMode!=='normal')throw new Error('Payment reconciliation authority required')}
+function authority(ctx:CommandContext){if(ctx.actor.kind!=='system'||!['payments','work','recovery'].includes(ctx.actor.purpose)||!systemModeAllowed(ctx.actor.purpose))throw new Error('Payment reconciliation authority required')}
 async function prepare(tx:DbTx,ctx:CommandContext,attemptId:string,lease?:WorkLease){
   authority(ctx);z.uuid().parse(attemptId)
   if(lease){const row=await fencedRow(tx,lease,ctx.clock.now());if(!row.dispatchStarted)throw new Error('Reconciliation requires started work')}

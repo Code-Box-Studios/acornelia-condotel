@@ -1,9 +1,10 @@
+import {fenced} from '@/http/fence'
 import {z,ZodError} from 'zod'
 import {requestContext} from '@/features/auth/context'
 import {readDraftSession,setDraftCookies} from '@/features/booking/draft-http'
 import {saveCheckoutDraft,type CheckoutDraft} from '@/features/booking/draft'
 import {readBoundedJson} from '@/http/body'
-export async function POST(request:Request){
+async function handlePOST(request:Request){
   try{
     const ctx=await requestContext(request),session=readDraftSession(request,ctx,true)!
     const body=z.object({draft:z.unknown(),expectedVersion:z.number().int().min(1).optional()}).strict().parse(await readBoundedJson(request))
@@ -18,3 +19,4 @@ export async function POST(request:Request){
     return Response.json({error:error instanceof ZodError?'Review the entered details.':'Your saved selection is unavailable. Choose your dates again.'},{status:400})
   }
 }
+export const POST=fenced('business-write',handlePOST)

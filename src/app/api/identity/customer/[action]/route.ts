@@ -1,3 +1,4 @@
+import {fenced} from '@/http/fence'
 import {ZodError,z} from 'zod'
 import {getDatabase} from '@/domain/db/payload'
 import {requestContext} from '@/features/auth/context'
@@ -9,7 +10,7 @@ import {clearQuoteBrowser} from '@/features/booking/quote-session'
 import {clearStatusCookies} from '@/features/booking/status-http'
 import {resumeCheckoutDraft,saveCheckoutDraft} from '@/features/booking/draft'
 function response(body:unknown,status=200){return Response.json(body,{status,headers:{'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}})}
-export async function POST(request:Request,{params}:{params:Promise<{action:string}>}){
+async function handlePOST(request:Request,{params}:{params:Promise<{action:string}>}){
   const {action}=await params
   try{
     const ctx=await requestContext(request),payload=await getDatabase()
@@ -38,3 +39,4 @@ export async function POST(request:Request,{params}:{params:Promise<{action:stri
     return response({error:'Customer access is temporarily unavailable. Please try again shortly.'},503)
   }
 }
+export const POST=fenced('authentication',handlePOST)

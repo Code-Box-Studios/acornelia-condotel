@@ -1,9 +1,10 @@
+import {fenced} from '@/http/fence'
 import {z} from 'zod'
 import {requestContext} from '@/features/auth/context'
 import {readStatusCookie} from '@/features/booking/status-http'
 import {checkoutDestination} from '@/features/booking/status'
 import {readBoundedForm} from '@/http/form'
-export async function POST(request:Request){
+async function handlePOST(request:Request){
   let bookingId:string|undefined
   try{
     const form=await readBoundedForm(request)
@@ -17,3 +18,4 @@ export async function POST(request:Request){
     return new Response(null,{status:303,headers:{Location:destination.href,'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}})
   }
 }
+export const POST=fenced('private-link',handlePOST)

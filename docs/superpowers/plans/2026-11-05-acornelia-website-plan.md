@@ -503,3 +503,9 @@ Acceptance evidence covers role refusal for customers and unapproved staff, code
 Customers can, when policy allows, deactivate or anonymize their own account. Approved staff can change a customer's name or, after checking identity, their email, and can deactivate or anonymize the account. A developer can remove another staff member's access while keeping at least one developer active. Email changes, deactivation, anonymization and removal end existing sessions, recovery tokens, unused claim tokens and account-bound private status links. Booking history never transfers by email, and no lifecycle action restores access or a role.
 
 Anonymization replaces the account's identity fields and keeps booking contact snapshots, payments, refunds, stay records and action logs as evidence pending the retention decision. These rules are candidates; Decisions 05, 07 and 08 must approve self-service, staff authority and retention before production use.
+
+### Implemented recovery quarantine candidate — November 19, 2026
+
+A restored database starts fenced. Two settings outside the database decide the stage, and the database must have accepted the current recovery generation before normal service resumes. While fenced, sign-in, private links, bookings, staff screens, workers, payments, refunds and email are refused, and provider notifications are stored for later processing. A reconcile stage lets only the recovery operator read Maya and apply verified money evidence.
+
+A named operator authorizes resumption with evidence signed by a key held outside the database. Resumption distrusts every restored credential: all accounts need password recovery, all tokens, claims and private links are revoked, and unsent payment, refund and message work is held for reconciliation or deliberate replay. The operator, backup provider, recovery targets and rehearsal schedule remain Decision 10 items.

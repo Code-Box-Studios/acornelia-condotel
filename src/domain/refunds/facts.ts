@@ -6,6 +6,7 @@ import type {MayaGateway,ProviderMoneyRequest,ProviderMoneyResult} from '@/integ
 import {parseEnvironment} from '@/config/env'
 import {relationshipId} from '@/features/customer/bookings'
 import {appendAudit} from '@/domain/audit/append'
+import {systemModeAllowed} from '@/config/operation-mode'
 export type RefundFact=Readonly<{paymentId:string;operationId:string|null;environment:'sandbox'|'production';kind:'refund'|'void';providerOperationId:string|null;providerPaymentId:string;amountMinor:string;currency:string;providerStatus:string;source:'merchant-get'|'merchant-post';observedAt:string;workGeneration:number|null;reason:string|null}>
 const witnesses=new WeakSet<object>()
 function seal(value:RefundFact):RefundFact{const fact=Object.freeze({...value});witnesses.add(fact);return fact}
@@ -15,7 +16,7 @@ export function postedRefundFact(input:{paymentId:string;operationId:string;kind
  if(outcome.kind!=='verified'||!z.uuid().safeParse(outcome.id).success||outcome.paymentId!==request.paymentId||outcome.amount.minor!==request.amount.minor||outcome.amount.currency!==request.amount.currency||!['SUCCESS','FAILED'].includes(outcome.status))return null
  return seal({paymentId:input.paymentId,operationId:input.operationId,environment:outcome.environment,kind:input.kind,providerOperationId:outcome.id,providerPaymentId:outcome.paymentId,amountMinor:outcome.amount.minor,currency:outcome.amount.currency,providerStatus:outcome.status,source:'merchant-post',observedAt:input.observedAt,workGeneration:input.workGeneration,reason:null})
 }
-export function refundSystem(ctx:CommandContext,allowWork=true){if(ctx.actor.kind!=='system'||!['payments','recovery',...(allowWork?['work']:[])].includes(ctx.actor.purpose)||parseEnvironment(process.env).operationMode!=='normal')throw new Error('Refund evidence authority required')}
+export function refundSystem(ctx:CommandContext,allowWork=true){if(ctx.actor.kind!=='system'||!['payments','recovery',...(allowWork?['work']:[])].includes(ctx.actor.purpose)||!systemModeAllowed(ctx.actor.purpose))throw new Error('Refund evidence authority required')}
 export async function ownedRefundPayment(tx:DbTx,paymentId:string):Promise<PaymentTransaction>{
  const payment=await tx.payload.findByID({collection:'payment-transactions',id:paymentId,depth:0,req:tx.req,overrideAccess:false})
  if(payment.status!=='collected'||payment.environment==='offline'||payment.environment!==parseEnvironment(process.env).mayaEnvironment||!relationshipId(payment.booking)||!payment.merchantReference)throw new Error('A merchant-owned collection is required')

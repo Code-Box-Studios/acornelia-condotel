@@ -1,3 +1,4 @@
+import {fenced} from '@/http/fence'
 import {z} from 'zod'
 import {requestContext} from '@/features/auth/context'
 import {readBoundedJson} from '@/http/body'
@@ -12,7 +13,7 @@ const schema=z.discriminatedUnion('action',[
  z.object({action:z.literal('resolve'),input:z.unknown()}).strict(),
 ])
 /** Refund commands keep their own policy, capacity and independence checks. */
-export async function POST(request:Request){
+async function handlePOST(request:Request){
  try{
   const ctx=await requestContext(request);if(ctx.actor.kind!=='staff')return staffDenied()
   const value=schema.parse(await readBoundedJson(request))
@@ -22,3 +23,4 @@ export async function POST(request:Request){
   const row=await resolveUncertainRefund(ctx,value.input as never);return staffJson({state:row.state})
  }catch(error){return staffFailure(error)}
 }
+export const POST=fenced('authentication',handlePOST)

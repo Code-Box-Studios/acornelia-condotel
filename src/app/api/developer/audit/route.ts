@@ -1,3 +1,4 @@
+import {fenced} from '@/http/fence'
 import {NextResponse} from 'next/server'
 import {ZodError} from 'zod'
 import {requestContext} from '@/features/auth/context'
@@ -11,7 +12,7 @@ function cell(value:unknown):string{
   if(/^[=+@\-\t\r]/.test(text))text="'"+text
   return '"'+text.replaceAll('"','""')+'"'
 }
-export async function GET(request:Request){
+async function handleGET(request:Request){
   const ctx=await requestContext(request)
   if(ctx.actor.kind!=='staff'||ctx.actor.role!=='developer'){
     await recordRefusedAttempt(await getDatabase(),ctx.actor,{action:new URL(request.url).searchParams.get('format')==='csv'?'audit:export-refused':'audit:read-refused',recordType:'audit-entries',outcome:'refused'})
@@ -35,3 +36,4 @@ export async function GET(request:Request){
     return NextResponse.json({error:'Action logs are temporarily unavailable'},{status:503,headers})
   }
 }
+export const GET=fenced('authentication',handleGET)

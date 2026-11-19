@@ -1,3 +1,4 @@
+import {fenced} from '@/http/fence'
 import {checkoutInputSchema} from '@/domain/bookings/validation'
 import {startCheckout} from '@/domain/bookings/start-checkout'
 import {requestContext} from '@/features/auth/context'
@@ -8,7 +9,7 @@ import {clearDraftCookies} from '@/features/booking/draft-http'
 import {configuredMayaGateway} from '@/integrations/maya/configured'
 import {acceptedQuote,quoteIdentity} from '@/domain/quotes/validation'
 import {CheckoutAccessUnavailable,CheckoutPollLimited} from '@/features/booking/status'
-export async function POST(request:Request){
+async function handlePOST(request:Request){
   let input
   try{input=checkoutInputSchema.parse(await readBoundedJson(request))}catch{return Response.json({state:'rejected',code:'invalid-input'},{status:400})}
   try{
@@ -24,7 +25,7 @@ export async function POST(request:Request){
     return response
   }catch(error){return Response.json({state:'rejected',code:error instanceof CheckoutAccessUnavailable?'access-required':'temporarily-unavailable'},{status:error instanceof CheckoutAccessUnavailable?401:error instanceof CheckoutPollLimited?429:503,headers:{'Cache-Control':'private, no-store',...(error instanceof CheckoutPollLimited?{'Retry-After':'60'}:{})}})}
 }
-export async function GET(request:Request){
+async function handleGET(request:Request){
   try{
     const url=new URL(request.url)
     if([...url.searchParams.keys()].length!==1||url.searchParams.getAll('commandKey').length!==1)return Response.json({error:'Invalid checkout reference.'},{status:400})
@@ -35,3 +36,5 @@ export async function GET(request:Request){
     return response
   }catch(error){return Response.json({error:error instanceof CheckoutPollLimited?'Wait before checking payment again.':'Private checkout access is unavailable.'},{status:error instanceof CheckoutPollLimited?429:401,headers:{'Cache-Control':'private, no-store',...(error instanceof CheckoutPollLimited?{'Retry-After':'60'}:{})}})}
 }
+export const POST=fenced('business-write',handlePOST)
+export const GET=fenced('business-write',handleGET)

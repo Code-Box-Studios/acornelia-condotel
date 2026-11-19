@@ -1,3 +1,4 @@
+import {fenced} from '@/http/fence'
 import {z,ZodError} from 'zod'
 import {readBoundedJson} from '@/http/body'
 import {requestContext} from '@/features/auth/context'
@@ -20,7 +21,7 @@ const inputSchema=z.discriminatedUnion('action',[
   z.object({action:z.literal('close'),quoteId:z.uuid(),commandKey:z.uuid()}).strict(),
 ])
 function response(value:unknown,status=200){return Response.json(value,{status,headers:{'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}})}
-export async function POST(request:Request){
+async function handlePOST(request:Request){
   try{
     const ctx=await requestContext(request);if(ctx.actor.kind!=='staff')return response({error:'Staff access required.'},401)
     const staffId=ctx.actor.id,value=inputSchema.parse(await readBoundedJson(request))
@@ -38,7 +39,7 @@ export async function POST(request:Request){
     const result=response({quote:toPublicQuote(quote),commandKey},201);setQuoteBrowser(result.headers,ctx.browserKey);return result
   }catch(error){return response({error:error instanceof ZodError||error instanceof SyntaxError?'Review the booking and receipt fields.':'The entry could not be completed. Check its saved result and review the original receipt before starting again.'},error instanceof ZodError||error instanceof SyntaxError?400:409)}
 }
-export async function GET(request:Request){
+async function handleGET(request:Request){
   try{
     const ctx=await requestContext(request);assertDirectStaff(ctx)
     const {commandKey}=z.object({commandKey:z.uuid()}).strict().parse(Object.fromEntries(new URL(request.url).searchParams)),booking=await readDirectResult(ctx,commandKey)
@@ -47,3 +48,5 @@ export async function GET(request:Request){
     return response({state:closed.totalDocs?'closed':'checking'})
   }catch{return response({error:'The original staff entry is unavailable.'},404)}
 }
+export const POST=fenced('authentication',handlePOST)
+export const GET=fenced('authentication',handleGET)

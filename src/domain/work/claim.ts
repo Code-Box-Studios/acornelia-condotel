@@ -3,10 +3,14 @@ import type {CommandContext} from '@/domain/db/types'
 import type {WorkKind,WorkLease} from './types'
 import {randomBytes} from 'node:crypto'
 import {appendAudit} from '@/domain/audit/append'
+import {operationAllowed} from '@/config/operation-mode'
+import {currentFence} from '@/domain/recovery/fence'
 import {assertWorker,fencedRow,ownerDigest,payloadFor,repeatable,workFingerprint,workPolicy} from './validation'
 export async function claimWork(ctx:CommandContext,kind:WorkKind):Promise<WorkLease|null>{
   assertWorker(ctx)
   return ctx.uow.run(ctx.actor,async tx=>{
+    // A restored or unreconciled database stays fenced even when the environment says normal.
+    if(!operationAllowed('worker',await currentFence(tx.payload,tx.req)))throw new Error('Work is quarantined')
     const policy=await workPolicy(ctx,tx),now=ctx.clock.now()
     const rows=(await tx.payload.find({collection:'work-items',where:{and:[{kind:{equals:kind}},{or:[{and:[{state:{equals:'ready'}},{availableAt:{less_than_equal:now}}]},{and:[{state:{equals:'leased'}},{leaseExpires:{less_than_equal:now}}]}]}]},sort:['availableAt','id'],limit:policy.maxBatch,depth:0,req:tx.req,overrideAccess:false})).docs
     for(const row of rows){

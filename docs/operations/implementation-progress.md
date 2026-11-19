@@ -4,7 +4,7 @@ Started November 13, 2026, following the user's instruction to implement the rev
 
 ## Current state
 
-Tasks 01–25 are implemented locally. The latest full run passed 380 automated checks in 39 files and 110 Chromium desktop/mobile checks. Tasks 26–29 remain. Production services and owner policy approvals are still gated.
+Tasks 01–26 are implemented locally. The latest full run passed 386 automated checks in 42 files (including the recovery rehearsal) and 110 Chromium desktop/mobile checks. Tasks 27–29 remain. Production services and owner policy approvals are still gated.
 
 - Task 01: application foundation implemented. Next.js 16.4.6, Payload 3.93.0, React 19.3.1, TypeScript 5.9.3 and pnpm 12.5.1 are locked.
 - Foundation validation: 19 unit tests passed after five intended positive-path failures; lint and TypeScript checks passed. Application build remains part of Task 02 after migrations.
@@ -32,7 +32,8 @@ Tasks 01–25 are implemented locally. The latest full run passed 380 automated 
 - Task 23 implements bounded refunds, voids and offline reimbursements with merchant reconciliation. Validation is recorded below; no real refund, void or bank transfer is claimed.
 - Task 24 implements the staff workspace: Today, room calendar, booking search and details, front-desk stay actions, internal notes, payments queue, enquiry follow-up and reports with protected CSV export. Validation is recorded below.
 - Task 25 implements account lifecycle commands with credential and link revocation and candidate retention rules. Validation is recorded below.
-- Tasks 26–29 remain pending.
+- Task 26 implements the external recovery fence, reconcile stage and signed operator resumption. Validation is recorded below.
+- Tasks 27–29 remain pending.
 
 ## Decision status
 
@@ -232,3 +233,11 @@ Task 25 adds `applyAccountLifecycle` and `revokeCapabilities`. Name and staff-as
 Validation: all 380 automated checks in 39 files and all 110 Chromium desktop/mobile checks passed in serialized runs. Seven lifecycle integration cases cover the named check (an old session gets 401 after an email change while booking ownership stays with the original account, and a recreated account with the old email has no history), deactivation revoking sessions, recovery tokens, claims and status links while keeping paid stays, anonymization keeping financial and audit evidence, developer-only staff removal that keeps one developer and restores no role, one winner between concurrent changes, policy refusals and a claim racing deactivation. The race test was shown to fail when claim revocation is removed. Task 09's upgrade test now seeds its historical customer with SQL. Lint, TypeScript, diff whitespace, the development migration and the optimized build passed. No real customer or staff account was changed.
 
 Customer and staff screens for these commands, the approved lifecycle and retention policies, and verified customer self-service email change remain Decision 05, 07 and 08 gates.
+
+## Recovery quarantine and resumption — November 19, 2026
+
+Task 26 adds `assertOperationAllowed` and `authorizeResumption`. The external fence (`APP_OPERATION_MODE`, `APP_RECOVERY_GENERATION`) and the database's accepted generation decide what may run; protected routes, Payload's REST API, page contexts and the work queue enforce it. The reconcile stage and the two operator scripts implement the procedure in the [recovery runbook](recovery-runbook.md).
+
+Validation: `pnpm test:recovery` passed all 386 automated checks in 42 files, and all 110 Chromium desktop/mobile checks passed with every protected route behind the fence. Four unit cases cover the fence rules. The rehearsal copies the test database as a backup, changes a password and revokes a link afterwards, restores the copy by swapping database names, and shows sign-in and the private link refused with 503, no payment or email sent, resumption refused in normal mode and with a signature over different evidence, and the old password and link refused with 401 after authorized resumption, with no unsent outbound work left queued. A reconcile-stage case reads Maya for a collection without any money call. The operator scripts' refusal paths were run. Lint, TypeScript, diff whitespace, the development migration and the optimized build passed. No real backup, provider or account was involved.
+
+The named operator, backup provider, recovery targets, hosted media restore and a production-like rehearsal remain Decision 10 and Task 27 gates.

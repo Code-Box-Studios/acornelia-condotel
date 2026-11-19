@@ -1,3 +1,4 @@
+import {systemModeAllowed} from '@/config/operation-mode'
 import {applyChangePaymentTx} from '@/domain/changes/payment'
 import {z} from 'zod'
 import type {CommandContext,DbTx} from '@/domain/db/types'
@@ -14,7 +15,7 @@ import {paymentIssue} from './exceptions'
 const observationSchema=z.object({inboxId:z.uuid()}).strict()
 const pending=new Set(['PENDING_TOKEN','PENDING_PAYMENT','FOR_AUTHENTICATION','AUTHENTICATING','AUTH_SUCCESS','PAYMENT_PROCESSING'])
 const authorized=new Set(['AUTHORIZED','DONE','CAPTURED']),failed=new Set(['AUTH_FAILED','PAYMENT_FAILED','PAYMENT_CANCELLED','PAYMENT_EXPIRED','CAPTURE_HOLD_EXPIRED'])
-function authority(ctx:CommandContext){if(ctx.actor.kind!=='system'||!['payments','work','recovery'].includes(ctx.actor.purpose)||parseEnvironment(process.env).operationMode!=='normal')throw new Error('Canonical payment authority required')}
+function authority(ctx:CommandContext){if(ctx.actor.kind!=='system'||!['payments','work','recovery'].includes(ctx.actor.purpose)||!systemModeAllowed(ctx.actor.purpose))throw new Error('Canonical payment authority required')}
 export async function applyPaymentObservationTx(tx:DbTx,ctx:CommandContext,observation:PaymentObservation):Promise<PaymentApplyResult>{
   authority(ctx)
   const {inboxId}=observationSchema.parse(observation),inbox=await tx.payload.findByID({collection:'payment-inbox',id:inboxId,depth:0,req:tx.req,overrideAccess:false}),now=ctx.clock.now()
