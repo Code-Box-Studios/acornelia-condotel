@@ -87,6 +87,11 @@ export function automatedOutcomes(vitest:unknown,playwright:unknown,root:string)
  for(const suite of report.suites)walk(suite,entry(fileOf(path.join(report.config.rootDir,suite.file))))
  return [...counts].sort(([a],[b])=>a<b?-1:a>b?1:0).map(([file,count])=>({file,result:count.passed>0&&!count.failed&&!count.flaky?'passed':'failed',detail:[`${count.passed} passed`,...(count.failed?[`${count.failed} failed`]:[]),...(count.flaky?[`${count.flaky} flaky`]:[]),...(count.skipped?[`${count.skipped} skipped`]:[])].join(', ')}))
 }
+/** Keeps outcomes for test files the register names; other files stay in CI, not in acceptance evidence. */
+export function registeredOutcomes(outcomes:Outcome[],requirements:string):{recorded:Outcome[];missing:string[]}{
+ const named=[...new Set(readRegister(requirements).requirements.flatMap(requirement=>requirement.files))].sort()
+ return {recorded:outcomes.filter(outcome=>named.includes(outcome.file)),missing:named.filter(file=>!outcomes.some(outcome=>outcome.file===file))}
+}
 /** Replaces earlier automated rows for the same revision and environment; further-evidence rows are kept. */
 export function recordOutcomes(markdown:string,input:{date:string;revision:string;environment:string;outcomes:Outcome[]}):string{
  if(!datePattern.test(input.date)||!revisionPattern.test(input.revision)||!environmentPattern.test(input.environment))throw new Error('Recording needs a date, a commit revision and an environment name')
@@ -100,10 +105,12 @@ function main(argv:string[]):number{
  const root=process.cwd(),evidencePath=path.join(root,'docs/acceptance/evidence.md')
  if(record){
   if(!values.vitest||!values.playwright)throw new Error('Recording needs --vitest and --playwright JSON reports')
-  const outcomes=automatedOutcomes(JSON.parse(readFileSync(values.vitest,'utf8')),JSON.parse(readFileSync(values.playwright,'utf8')),root)
+  const reported=automatedOutcomes(JSON.parse(readFileSync(values.vitest,'utf8')),JSON.parse(readFileSync(values.playwright,'utf8')),root)
+  const {recorded:outcomes,missing}=registeredOutcomes(reported,readFileSync(path.join(root,'docs/acceptance/requirements.md'),'utf8'))
   writeFileSync(evidencePath,recordOutcomes(readFileSync(evidencePath,'utf8'),{date:values.date??new Date().toISOString().slice(0,10),revision:values.revision??'',environment:values.environment??'',outcomes}))
-  console.log(`Recorded ${outcomes.length} test files: ${outcomes.filter(outcome=>outcome.result==='passed').length} passed, ${outcomes.filter(outcome=>outcome.result==='failed').length} failed.`)
-  return 0
+  console.log(`Recorded ${outcomes.length} register test files: ${outcomes.filter(outcome=>outcome.result==='passed').length} passed, ${outcomes.filter(outcome=>outcome.result==='failed').length} failed.`)
+  for(const file of missing)console.log('- Not in the reports: '+file)
+  return missing.length?1:0
  }
  const revision=values.revision??'',environment=values.environment??''
  const result=verifyAcceptance({requirements:readFileSync(path.join(root,'docs/acceptance/requirements.md'),'utf8'),evidence:readFileSync(evidencePath,'utf8')},{revision,environment,fileExists:file=>existsSync(path.join(root,file))})

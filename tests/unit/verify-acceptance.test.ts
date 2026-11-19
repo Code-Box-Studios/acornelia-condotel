@@ -1,6 +1,6 @@
 import {existsSync,readFileSync} from 'node:fs'
 import {describe,it,expect} from 'vitest'
-import {acceptanceExitCode,automatedOutcomes,readRegister,recordOutcomes,verifyAcceptance} from '../../scripts/verify-acceptance'
+import {acceptanceExitCode,automatedOutcomes,readRegister,recordOutcomes,registeredOutcomes,verifyAcceptance} from '../../scripts/verify-acceptance'
 const revision='abcdef1234567890abcdef1234567890abcdef12'
 const table=(heading:string,header:string,rows:string[])=>['## '+heading,'',header,'| '+header.split('|').slice(1,-1).map(()=>'---').join(' | ')+' |',...rows,''].join('\n')
 function register(options:{ids?:number[];blocker?:string}={}){
@@ -70,6 +70,10 @@ describe('acceptance evidence checker',()=>{
    {file:'tests/integration/d.test.ts',result:'failed',detail:'0 passed, 2 skipped'},
    {file:'tests/unit/a.test.ts',result:'passed',detail:'2 passed, 1 skipped'},
   ])
+ })
+ it('records only test files named by the register and lists named files missing from the reports',()=>{
+  const outcomes=[{file:'tests/unit/a.test.ts',result:'passed' as const,detail:'3 passed'},{file:'tests/unit/unlisted.test.ts',result:'passed' as const,detail:'1 passed'}]
+  expect(registeredOutcomes(outcomes,register())).toEqual({recorded:[outcomes[0]],missing:['tests/e2e/b.spec.ts']})
  })
  it('replaces earlier automated rows for the same revision and environment when recording',()=>{
   const before=evidence([

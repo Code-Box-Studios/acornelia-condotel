@@ -19,7 +19,7 @@ PLAYWRIGHT_JSON_OUTPUT_FILE=playwright-report.json pnpm test:e2e --reporter=list
 pnpm verify:acceptance record --revision "$(git rev-parse HEAD)" --environment local-isolated --date 2026-11-19 --vitest vitest-report.json --playwright playwright-report.json
 ```
 
-Recording replaces earlier rows for the same revision and environment. A file passes only when it ran at least one test and none failed, timed out or passed only on retry. Record further evidence by hand, one row per key, with a pointer to its protected record or [UAT](uat.md) session in Detail.
+Recording keeps only the test files the register names and replaces earlier rows for the same revision and environment. It lists any register file missing from the reports and then exits 1. A file passes only when it ran at least one test and none failed, timed out or passed only on retry. Record further evidence by hand, one row per key, with a pointer to its protected record or [UAT](uat.md) session in Detail.
 
 ## Acceptance check runs
 
