@@ -1,7 +1,7 @@
 import {z} from 'zod'
 import type {DbTx} from '../db/types'
 import type {AuditInput} from './types'
-const fields=new Set(['before','after','fieldsChanged','label','title','role','status','state','revision','onSale','deactivated','arrival','departure','room','roomId','booking','bookingId','amountMinor','currency','discountMinor','totalMinor','nightlyMinor','offerVersionId','policyVersionId','_status','publishedAt','eventDate','validFrom','validUntil','capacity','maxGuests','valueMinor','percentBps','reasonCode','source','requestId'])
+const fields=new Set(['before','after','fieldsChanged','label','title','role','status','state','revision','onSale','deactivated','arrival','departure','room','roomId','booking','bookingId','amountMinor','currency','discountMinor','totalMinor','nightlyMinor','offerVersionId','policyVersionId','_status','publishedAt','eventDate','validFrom','validUntil','capacity','maxGuests','valueMinor','percentBps','reasonCode','source','requestId','count','propertyDate','resolutionCode','rangeFrom','rangeTo'])
 function safeChanges(input:Record<string,unknown>,depth=0):Record<string,unknown>{
   if(depth>2)throw new Error('Unsafe audit nesting')
   const output:Record<string,unknown>={}

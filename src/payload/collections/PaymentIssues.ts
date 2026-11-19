@@ -13,5 +13,6 @@ export const PaymentIssues:CollectionConfig={
     {name:'observedAmountMinor',type:'text'}, {name:'observedCurrency',type:'text'},
     select('state',['open','resolved'],'open'),date('resolvedAt',false),
     {name:'resolutionCode',type:'text'},
+    {name:'resolutionReference',type:'text'},{name:'resolvedBy',type:'relationship',relationTo:'staff-users',index:true},
   ],
 }

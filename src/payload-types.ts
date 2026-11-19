@@ -68,6 +68,8 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    'stay-events': StayEvent;
+    'staff-notes': StaffNote;
     'refund-evidence': RefundEvidence;
     'refund-operations': RefundOperation;
     'booking-changes': BookingChange;
@@ -108,6 +110,8 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    'stay-events': StayEventsSelect<false> | StayEventsSelect<true>;
+    'staff-notes': StaffNotesSelect<false> | StaffNotesSelect<true>;
     'refund-evidence': RefundEvidenceSelect<false> | RefundEvidenceSelect<true>;
     'refund-operations': RefundOperationsSelect<false> | RefundOperationsSelect<true>;
     'booking-changes': BookingChangesSelect<false> | BookingChangesSelect<true>;
@@ -208,69 +212,18 @@ export interface CustomerAuthOperations {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "refund-evidence".
+ * via the `definition` "stay-events".
  */
-export interface RefundEvidence {
+export interface StayEvent {
   id: string;
-  semanticKey: string;
-  payment: string | PaymentTransaction;
-  operation?: (string | null) | RefundOperation;
-  environment: 'sandbox' | 'production' | 'offline';
-  kind: 'refund' | 'void' | 'offline';
-  providerOperationId?: string | null;
-  providerPaymentId: string;
-  amountMinor: string;
-  currency: string;
-  providerStatus: string;
-  source: 'merchant-get' | 'merchant-post' | 'staff-attested' | 'staff-reviewed';
-  observedAt: string;
-  proof:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  workGeneration?: number | null;
-  sourceStaff?: (string | null) | StaffUser;
-  reviewerStaff?: (string | null) | StaffUser;
-  state: 'pending' | 'processed' | 'exception';
-  processedAt?: string | null;
-  reasonCode?: string | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "payment-transactions".
- */
-export interface PaymentTransaction {
-  id: string;
-  providerPaymentId: string;
-  merchantReference?: string | null;
-  booking?: (string | null) | Booking;
-  attempt?: (string | null) | PaymentAttempt;
-  environment: 'sandbox' | 'production' | 'offline';
-  amountMinor: string;
-  currency: string;
-  appliedRevision?: number | null;
-  collectedAt?: string | null;
-  lastObservedAt?: string | null;
-  providerStatus?: string | null;
-  offlineEvidence?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  offlineReceiptKey?: string | null;
-  recordedByStaff?: (string | null) | StaffUser;
-  status: 'pending' | 'authorized' | 'collected' | 'failed' | 'voided';
+  commandKey: string;
+  fingerprint: string;
+  booking: string | Booking;
+  kind: 'checked-in' | 'checked-out' | 'no-show';
+  propertyDate: string;
+  bookingRevision: number;
+  staff: string | StaffUser;
+  occurredAt: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -619,6 +572,128 @@ export interface Offer {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "staff-notes".
+ */
+export interface StaffNote {
+  id: string;
+  commandKey: string;
+  fingerprint: string;
+  booking?: (string | null) | Booking;
+  enquiry?: (string | null) | Enquiry;
+  staff: string | StaffUser;
+  text: string;
+  recordedAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * An enquiry does not reserve a room or confirm payment.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "enquiries".
+ */
+export interface Enquiry {
+  id: string;
+  reference: string;
+  nonce: string;
+  fingerprint: string;
+  emailHash: string;
+  submittedAt: string;
+  contact:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  postSnapshot?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  state: 'received' | 'delivery-pending' | 'delivered' | 'delivery-failed' | 'closed';
+  followUpOutcome?: ('contacted' | 'booked' | 'not-pursued' | 'duplicate') | null;
+  closedAt?: string | null;
+  closedBy?: (string | null) | StaffUser;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "refund-evidence".
+ */
+export interface RefundEvidence {
+  id: string;
+  semanticKey: string;
+  payment: string | PaymentTransaction;
+  operation?: (string | null) | RefundOperation;
+  environment: 'sandbox' | 'production' | 'offline';
+  kind: 'refund' | 'void' | 'offline';
+  providerOperationId?: string | null;
+  providerPaymentId: string;
+  amountMinor: string;
+  currency: string;
+  providerStatus: string;
+  source: 'merchant-get' | 'merchant-post' | 'staff-attested' | 'staff-reviewed';
+  observedAt: string;
+  proof:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  workGeneration?: number | null;
+  sourceStaff?: (string | null) | StaffUser;
+  reviewerStaff?: (string | null) | StaffUser;
+  state: 'pending' | 'processed' | 'exception';
+  processedAt?: string | null;
+  reasonCode?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-transactions".
+ */
+export interface PaymentTransaction {
+  id: string;
+  providerPaymentId: string;
+  merchantReference?: string | null;
+  booking?: (string | null) | Booking;
+  attempt?: (string | null) | PaymentAttempt;
+  environment: 'sandbox' | 'production' | 'offline';
+  amountMinor: string;
+  currency: string;
+  appliedRevision?: number | null;
+  collectedAt?: string | null;
+  lastObservedAt?: string | null;
+  providerStatus?: string | null;
+  offlineEvidence?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  offlineReceiptKey?: string | null;
+  recordedByStaff?: (string | null) | StaffUser;
+  status: 'pending' | 'authorized' | 'collected' | 'failed' | 'voided';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payment-attempts".
  */
 export interface PaymentAttempt {
@@ -945,41 +1020,6 @@ export interface EmailMessage {
   createdAt: string;
 }
 /**
- * An enquiry does not reserve a room or confirm payment.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "enquiries".
- */
-export interface Enquiry {
-  id: string;
-  reference: string;
-  nonce: string;
-  fingerprint: string;
-  emailHash: string;
-  submittedAt: string;
-  contact:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  postSnapshot?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  state: 'received' | 'delivery-pending' | 'delivered' | 'delivery-failed' | 'closed';
-  updatedAt: string;
-  createdAt: string;
-}
-/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payment-issues".
  */
@@ -996,6 +1036,8 @@ export interface PaymentIssue {
   state: 'open' | 'resolved';
   resolvedAt?: string | null;
   resolutionCode?: string | null;
+  resolutionReference?: string | null;
+  resolvedBy?: (string | null) | StaffUser;
   updatedAt: string;
   createdAt: string;
 }
@@ -1189,6 +1231,14 @@ export interface PayloadLockedDocument {
   id: string;
   document?:
     | ({
+        relationTo: 'stay-events';
+        value: string | StayEvent;
+      } | null)
+    | ({
+        relationTo: 'staff-notes';
+        value: string | StaffNote;
+      } | null)
+    | ({
         relationTo: 'refund-evidence';
         value: string | RefundEvidence;
       } | null)
@@ -1371,6 +1421,37 @@ export interface PayloadMigration {
   batch?: number | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "stay-events_select".
+ */
+export interface StayEventsSelect<T extends boolean = true> {
+  commandKey?: T;
+  fingerprint?: T;
+  booking?: T;
+  kind?: T;
+  propertyDate?: T;
+  bookingRevision?: T;
+  staff?: T;
+  occurredAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "staff-notes_select".
+ */
+export interface StaffNotesSelect<T extends boolean = true> {
+  commandKey?: T;
+  fingerprint?: T;
+  booking?: T;
+  enquiry?: T;
+  staff?: T;
+  text?: T;
+  recordedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1730,6 +1811,9 @@ export interface EnquiriesSelect<T extends boolean = true> {
   contact?: T;
   postSnapshot?: T;
   state?: T;
+  followUpOutcome?: T;
+  closedAt?: T;
+  closedBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2018,6 +2102,8 @@ export interface PaymentIssuesSelect<T extends boolean = true> {
   state?: T;
   resolvedAt?: T;
   resolutionCode?: T;
+  resolutionReference?: T;
+  resolvedBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }

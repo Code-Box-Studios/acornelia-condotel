@@ -4,7 +4,7 @@ Started November 13, 2026, following the user's instruction to implement the rev
 
 ## Current state
 
-Tasks 01–23 are implemented locally. The latest full run passed 359 automated checks in 36 files and 96 Chromium desktop/mobile checks. Tasks 24–29 remain. Production services and owner policy approvals are still gated.
+Tasks 01–24 are implemented locally. The latest full run passed 373 automated checks in 38 files and 110 Chromium desktop/mobile checks. Tasks 25–29 remain. Production services and owner policy approvals are still gated.
 
 - Task 01: application foundation implemented. Next.js 16.4.6, Payload 3.93.0, React 19.3.1, TypeScript 5.9.3 and pnpm 12.5.1 are locked.
 - Foundation validation: 19 unit tests passed after five intended positive-path failures; lint and TypeScript checks passed. Application build remains part of Task 02 after migrations.
@@ -30,7 +30,8 @@ Tasks 01–23 are implemented locally. The latest full run passed 359 automated 
 - Task 20 implements encrypted transactional email intents, gated SMTP, native staff reset queuing and private fragment-link pages. Final validation is recorded below; no actual Brevo send or inbox receipt is claimed.
 - Task 21 implements staff phone/walk-in bookings with permitted offline collections; Task 22 implements staff-reviewed stay changes and cancellation. Their validation is recorded below.
 - Task 23 implements bounded refunds, voids and offline reimbursements with merchant reconciliation. Validation is recorded below; no real refund, void or bank transfer is claimed.
-- Tasks 24–29 remain pending.
+- Task 24 implements the staff workspace: Today, room calendar, booking search and details, front-desk stay actions, internal notes, payments queue, enquiry follow-up and reports with protected CSV export. Validation is recorded below.
+- Tasks 25–29 remain pending.
 
 ## Decision status
 
@@ -212,3 +213,13 @@ Refund authorization reserves capacity against one actual collected payment and 
 Validation: all 359 automated checks in 36 files and all 96 Chromium desktop/mobile checks passed in serialized runs. The 21 refund integration cases cover capacity counted once, competing reservations, intent replay, authority/revision/amount refusals, audit rollback, external import, empty and reason-marker lookups, changing provider facts, a receipt kept across a stale lease, GET-before-POST settlement, known refusal, abandoned-dispatch escalation, handler registration, offline attestation/review, independent manual settlement, provider timing restrictions, competing runners and a late stale failure. Four synthetic contract cases cover the refund-list read. Three tests that passed on first run were each shown to fail under a temporary code mutation. Lint, TypeScript, diff whitespace, the development migration and the optimized build passed. Migrations `20261116_035134_refund_operations` and `20261116_041746_refund_evidence` are applied only to local test/development targets. No real refund, void, refund-list read, bank transfer or email was performed.
 
 Refund policy values, merchant void/refund capability, partial-refund support, methods, caps and the real refund-list response remain owner and Task 27 gates. Staff screens for authorization, offline review and manual settlement belong to Task 24.
+
+## Staff workspace — November 19, 2026
+
+Task 24 adds the staff workspace at `/staff`. Today lists arrivals, departures, guests in house and upcoming arrivals, with the date range and time zone behind them, plus counts of open payment issues, uncertain refunds, offline reimbursements awaiting review and open enquiries. The room calendar shows two weeks of stays, holds and blocks per physical room. Bookings can be found by code, guest text or arrival dates. Booking details show contact actions, payments, refunds, issues, internal notes and stay history, with check-in, check-out and no-show buttons offered only when the server allows them today. The payments queue resolves issues, settles uncertain refunds against imported Maya refunds and handles two-person offline reimbursements through the Task 23 commands. Enquiries close with an outcome and an internal note. Reports keep booking, collection and refund figures separate per currency in the property time zone, and approved roles can download a formula-safe CSV.
+
+Every read and action requires a staff role approved in the candidate `operations` policy, pending Decision 08. Lookups, detail views, searches, report views and exports are logged without note text, search text or contact data. Migration `20261119_111300_operations_workspace` adds the append-only `stay-events` and `staff-notes` journals and the enquiry-closure and issue-resolution fields. The [staff workspace guide](staff-workspace-guide.md) gives the procedures in plain language; the [operations guide](deployment.md#staff-workspace--november-19-2026) records configuration and limits.
+
+Validation: all 373 automated checks in 38 files and all 110 Chromium desktop/mobile checks passed in serialized runs. Ten operations and four report integration cases cover role refusal, code lookup and its audit entry, Today lists and range, check-in/out ordering and concurrency, no-show timing with a late arrival, stale revisions, notes kept out of the log, issue resolution, enquiry closure, search, the calendar, report bases across the property-date boundary, CSV formula protection and range limits. Seven browser cases on desktop and phone cover the named lookup check (anonymous 403, staff code returned), code search with a keyboard-submitted note at 320 px, today's arrival checked in from its page, issue resolution, CSV export, refusal for customers and unapproved roles, and enquiry closure with the calendar and anonymous/unapproved probes of every operations write route. Desktop and phone screenshots were inspected in light and dark themes. Lint, TypeScript, diff whitespace, the development migration and the optimized build passed. No real staff account, guest, provider or email was involved.
+
+Real staff accounts, approved roles and operating values, Safari/WebKit and physical-device checks, and staff training remain owner and UAT gates.
