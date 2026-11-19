@@ -18,6 +18,8 @@ test('shows private booking history and detail without exposing another customer
   await expect(page.getByRole('link',{name:'View booking OWN-HISTORY-FIXTURE',exact:true})).toBeVisible()
   await expect(page.locator('main')).not.toContainText(foreign.code!)
   await page.getByRole('link',{name:'View booking OWN-HISTORY-FIXTURE',exact:true}).click()
+  // The list also shows the code heading and total, so wait for the detail route; next dev may compile it first.
+  await page.waitForURL('**/account/bookings/'+own.id)
   await expect(page.getByRole('heading',{name:'OWN-HISTORY-FIXTURE',exact:true})).toBeVisible()
   await expect(page.locator('main')).toContainText('₱1,234.56')
   await expect(page.locator('main')).toContainText('Different contact')
