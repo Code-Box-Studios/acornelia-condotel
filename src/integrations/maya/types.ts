@@ -12,7 +12,9 @@ export type ProviderMoneyResult=
   |{kind:'verified';environment:MayaEnvironment;id:string;paymentId:string;status:'SUCCESS'|'FAILED';amount:Money}
   |{kind:'refused';reason:ProviderRefusal}
   |{kind:'unknown';environment:MayaEnvironment;paymentId:string;operationId:string}
+export type ProviderRefund={id:string;paymentId:string;status:string;amount:Money;reason:string|null}
 export interface MayaGateway {
+  retrieveRefunds?(paymentId:string,signal?:AbortSignal):Promise<ProviderRefund[]>
   createCheckout(attempt:CheckoutAttempt,signal?:AbortSignal):Promise<CreateCheckoutResult>
   retrievePayment(id:string,signal?:AbortSignal):Promise<ProviderPayment>
   findPaymentsByReference(reference:string,signal?:AbortSignal):Promise<ProviderPayment[]>

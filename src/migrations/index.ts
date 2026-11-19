@@ -24,6 +24,8 @@ import * as migration_20261116_015111_direct_bookings from './20261116_015111_di
 import * as migration_20261116_021800_direct_entry_recovery from './20261116_021800_direct_entry_recovery';
 import * as migration_20261116_023100_direct_command_required from './20261116_023100_direct_command_required';
 import * as migration_20261116_025903_booking_changes from './20261116_025903_booking_changes';
+import * as migration_20261116_035134_refund_operations from './20261116_035134_refund_operations';
+import * as migration_20261116_041746_refund_evidence from './20261116_041746_refund_evidence';
 
 export const migrations = [
   {
@@ -154,6 +156,16 @@ export const migrations = [
   {
     up: migration_20261116_025903_booking_changes.up,
     down: migration_20261116_025903_booking_changes.down,
-    name: '20261116_025903_booking_changes'
+    name: '20261116_025903_booking_changes',
+  },
+  {
+    up: migration_20261116_035134_refund_operations.up,
+    down: migration_20261116_035134_refund_operations.down,
+    name: '20261116_035134_refund_operations',
+  },
+  {
+    up: migration_20261116_041746_refund_evidence.up,
+    down: migration_20261116_041746_refund_evidence.down,
+    name: '20261116_041746_refund_evidence'
   },
 ];

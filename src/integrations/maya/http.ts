@@ -1,3 +1,4 @@
+import {retrieveRefunds} from './refund-reads'
 import {z} from 'zod'
 import type {MayaConfig,MayaDependencies,MayaGateway} from './types'
 import {createCheckout} from './checkout'
@@ -39,6 +40,7 @@ export function createMayaGateway(input:MayaConfig,overrides:Partial<MayaDepende
   }}
   return {
     createCheckout:(attempt,signal)=>createCheckout(transport,attempt,signal),
+    retrieveRefunds:(id,signal)=>retrieveRefunds(transport,id,signal),
     retrievePayment:(id,signal)=>retrievePayment(transport,id,signal),
     findPaymentsByReference:(reference,signal)=>findPaymentsByReference(transport,reference,signal),
     voidPayment:(request,signal)=>moneyOperation(transport,'void',request,signal),

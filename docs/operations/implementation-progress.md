@@ -4,7 +4,7 @@ Started November 13, 2026, following the user's instruction to implement the rev
 
 ## Current state
 
-Tasks 01–22 are implemented locally. The latest full run passed 334 automated checks in 34 files and 96 Chromium desktop/mobile checks. Tasks 23–29 remain. Production services and owner policy approvals are still gated.
+Tasks 01–23 are implemented locally. The latest full run passed 359 automated checks in 36 files and 96 Chromium desktop/mobile checks. Tasks 24–29 remain. Production services and owner policy approvals are still gated.
 
 - Task 01: application foundation implemented. Next.js 16.4.6, Payload 3.93.0, React 19.3.1, TypeScript 5.9.3 and pnpm 12.5.1 are locked.
 - Foundation validation: 19 unit tests passed after five intended positive-path failures; lint and TypeScript checks passed. Application build remains part of Task 02 after migrations.
@@ -28,7 +28,9 @@ Tasks 01–22 are implemented locally. The latest full run passed 334 automated 
 - Task 18 implements merchant-verified canonical payment application, one-time confirmation, paid exceptions and policy-gated late reacquisition. Final validation is recorded below; no live collection or refund is claimed.
 - Task 19 implements bounded original-attempt recovery, safe room/offer expiry and explicit private link resumption. Final validation is recorded below.
 - Task 20 implements encrypted transactional email intents, gated SMTP, native staff reset queuing and private fragment-link pages. Final validation is recorded below; no actual Brevo send or inbox receipt is claimed.
-- Tasks 21–29 remain pending.
+- Task 21 implements staff phone/walk-in bookings with permitted offline collections; Task 22 implements staff-reviewed stay changes and cancellation. Their validation is recorded below.
+- Task 23 implements bounded refunds, voids and offline reimbursements with merchant reconciliation. Validation is recorded below; no real refund, void or bank transfer is claimed.
+- Tasks 24–29 remain pending.
 
 ## Decision status
 
@@ -200,3 +202,13 @@ An increase creates its own exact Maya delta attempt and leaves the paid origina
 Cancellation requires an approved role, cutoff and reviewed agreement/reason. Its revision, pending-change abandonment, inventory release and audit commit together. Money remains recorded; cancellation does not assert refund settlement. Consumed offer usage stays consumed pending approved repayment/reinstatement rules. The initial candidate leaves offer-bearing changes and customer self-service approval unavailable. Real cutoffs, refund authority and related owner rules remain unapproved. Operational handoff and staff controls belong to Task 24.
 
 Validation: all 334 automated checks in 34 files and all 96 Chromium desktop/mobile checks passed in serialized runs. The 24 stay-change integration cases include exact funding, late/extra money, offline-cash refusal, legacy funding review, physical-capacity races, actor isolation, current private status and insertion/release/audit rollback. An older fixture now asserts that direct revision edits fail; superseded money is tested through a real committed revision. Lint, TypeScript, diff whitespace, the development migration and optimized build passed. Migration `20261116_025903_booking_changes` is applied only to local test/development targets. No actual payment, refund, bank transfer, email delivery or hosted deployment was performed. Owner policy approval, staff UI/payment handoff, repayment and release verification remain separate gates.
+
+## Bounded refunds and voids — November 19, 2026
+
+Task 23 was resumed from an uncommitted partial implementation left by the earlier Codex session, whose last run had 10 of 12 refund-capacity tests passing. Both failing tests were reproduced before any change.
+
+Refund authorization reserves capacity against one actual collected payment and the booking's current revision. Remaining capacity deducts completed returns and every authorized, dispatching or uncertain reservation once, at both payment and booking level. Dispatch sends one POST per operation and never retries automatically. The verified POST response is stored immediately as immutable evidence, outside the worker's lease fence, so a lost lease cannot lose the only link between the provider refund ID and the local operation. Reconciliation applies those receipts before merchant refund-list reads. An external dashboard refund is imported once. A receipt that arrives after its refund was already imported settles the app operation as `satisfied`, counting the money once. Bounded `reconcile-refund` checks mark abandoned dispatches `uncertain`, keep them reserved, and open one `refund-outcome-uncertain` payment issue when checks run out. Offline reimbursements need staff-attested evidence and a different staff member's review. Independent manual settlement of an uncertain request against one exactly matching imported provider refund is available only when policy enables it. The [operations guide](deployment.md#refunds-voids-and-offline-reimbursements--november-19-2026) records the operator procedure.
+
+Validation: all 359 automated checks in 36 files and all 96 Chromium desktop/mobile checks passed in serialized runs. The 21 refund integration cases cover capacity counted once, competing reservations, intent replay, authority/revision/amount refusals, audit rollback, external import, empty and reason-marker lookups, changing provider facts, a receipt kept across a stale lease, GET-before-POST settlement, known refusal, abandoned-dispatch escalation, handler registration, offline attestation/review, independent manual settlement, provider timing restrictions, competing runners and a late stale failure. Four synthetic contract cases cover the refund-list read. Three tests that passed on first run were each shown to fail under a temporary code mutation. Lint, TypeScript, diff whitespace, the development migration and the optimized build passed. Migrations `20261116_035134_refund_operations` and `20261116_041746_refund_evidence` are applied only to local test/development targets. No real refund, void, refund-list read, bank transfer or email was performed.
+
+Refund policy values, merchant void/refund capability, partial-refund support, methods, caps and the real refund-list response remain owner and Task 27 gates. Staff screens for authorization, offline review and manual settlement belong to Task 24.

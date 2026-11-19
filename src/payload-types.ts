@@ -68,6 +68,8 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    'refund-evidence': RefundEvidence;
+    'refund-operations': RefundOperation;
     'booking-changes': BookingChange;
     'direct-command-closures': DirectCommandClosure;
     offers: Offer;
@@ -106,6 +108,8 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    'refund-evidence': RefundEvidenceSelect<false> | RefundEvidenceSelect<true>;
+    'refund-operations': RefundOperationsSelect<false> | RefundOperationsSelect<true>;
     'booking-changes': BookingChangesSelect<false> | BookingChangesSelect<true>;
     'direct-command-closures': DirectCommandClosuresSelect<false> | DirectCommandClosuresSelect<true>;
     offers: OffersSelect<false> | OffersSelect<true>;
@@ -204,54 +208,69 @@ export interface CustomerAuthOperations {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "booking-changes".
+ * via the `definition` "refund-evidence".
  */
-export interface BookingChange {
+export interface RefundEvidence {
   id: string;
-  commandKey: string;
-  fingerprint: string;
-  booking: string | Booking;
-  staff: string | StaffUser;
-  kind: 'stay' | 'cancellation';
-  state: 'awaiting-payment' | 'completed' | 'failed' | 'abandoned';
-  baseRevision: number;
-  targetRevision: number;
-  quote?: (string | null) | Quote;
-  paymentAttempt?: (string | null) | PaymentAttempt;
-  originalQuote:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  acceptedQuote:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  originalAllocation:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  deltaMinor: string;
+  semanticKey: string;
+  payment: string | PaymentTransaction;
+  operation?: (string | null) | RefundOperation;
+  environment: 'sandbox' | 'production' | 'offline';
+  kind: 'refund' | 'void' | 'offline';
+  providerOperationId?: string | null;
+  providerPaymentId: string;
+  amountMinor: string;
   currency: string;
-  agreementReference: string;
-  reason: string;
-  completedAt?: string | null;
-  abandonedAt?: string | null;
+  providerStatus: string;
+  source: 'merchant-get' | 'merchant-post' | 'staff-attested' | 'staff-reviewed';
+  observedAt: string;
+  proof:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  workGeneration?: number | null;
+  sourceStaff?: (string | null) | StaffUser;
+  reviewerStaff?: (string | null) | StaffUser;
+  state: 'pending' | 'processed' | 'exception';
+  processedAt?: string | null;
   reasonCode?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-transactions".
+ */
+export interface PaymentTransaction {
+  id: string;
+  providerPaymentId: string;
+  merchantReference?: string | null;
+  booking?: (string | null) | Booking;
+  attempt?: (string | null) | PaymentAttempt;
+  environment: 'sandbox' | 'production' | 'offline';
+  amountMinor: string;
+  currency: string;
+  appliedRevision?: number | null;
+  collectedAt?: string | null;
+  lastObservedAt?: string | null;
+  providerStatus?: string | null;
+  offlineEvidence?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  offlineReceiptKey?: string | null;
+  recordedByStaff?: (string | null) | StaffUser;
+  status: 'pending' | 'authorized' | 'collected' | 'failed' | 'voided';
   updatedAt: string;
   createdAt: string;
 }
@@ -650,6 +669,125 @@ export interface PaymentAttempt {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "refund-operations".
+ */
+export interface RefundOperation {
+  id: string;
+  commandKey: string;
+  fingerprint: string;
+  origin: 'app' | 'provider' | 'offline';
+  booking: string | Booking;
+  payment: string | PaymentTransaction;
+  authorizedStaff?: (string | null) | StaffUser;
+  change?: (string | null) | BookingChange;
+  expectedRevision: number;
+  method: 'refund' | 'void' | 'offline';
+  state: 'authorized' | 'dispatching' | 'uncertain' | 'completed' | 'failed' | 'cancelled' | 'satisfied';
+  amountMinor: string;
+  currency: string;
+  reason: 'guest-cancellation' | 'stay-change' | 'duplicate-payment' | 'late-payment' | 'manual-review';
+  evidenceReference?: string | null;
+  policySnapshot?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  providerEnvironment?: ('sandbox' | 'production') | null;
+  providerOperationId?: string | null;
+  providerStatus?: string | null;
+  actualAmountMinor?: string | null;
+  actualCurrency?: string | null;
+  resultProof?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  dispatchGeneration: number;
+  dispatchedAt?: string | null;
+  observedAt?: string | null;
+  completedAt?: string | null;
+  reasonCode?: string | null;
+  reconcileSequence: number;
+  nextReconcileAt?: string | null;
+  lastEvidence?: (string | null) | RefundEvidence;
+  settledByRefund?: (string | null) | RefundOperation;
+  offlineEvidence?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  offlineReceiptKey?: string | null;
+  reviewerStaff?: (string | null) | StaffUser;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "booking-changes".
+ */
+export interface BookingChange {
+  id: string;
+  commandKey: string;
+  fingerprint: string;
+  booking: string | Booking;
+  staff: string | StaffUser;
+  kind: 'stay' | 'cancellation';
+  state: 'awaiting-payment' | 'completed' | 'failed' | 'abandoned';
+  baseRevision: number;
+  targetRevision: number;
+  quote?: (string | null) | Quote;
+  paymentAttempt?: (string | null) | PaymentAttempt;
+  originalQuote:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  acceptedQuote:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  originalAllocation:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  deltaMinor: string;
+  currency: string;
+  agreementReference: string;
+  reason: string;
+  completedAt?: string | null;
+  abandonedAt?: string | null;
+  reasonCode?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "direct-command-closures".
  */
 export interface DirectCommandClosure {
@@ -863,38 +1001,6 @@ export interface PaymentIssue {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "payment-transactions".
- */
-export interface PaymentTransaction {
-  id: string;
-  providerPaymentId: string;
-  merchantReference?: string | null;
-  booking?: (string | null) | Booking;
-  attempt?: (string | null) | PaymentAttempt;
-  environment: 'sandbox' | 'production' | 'offline';
-  amountMinor: string;
-  currency: string;
-  appliedRevision?: number | null;
-  collectedAt?: string | null;
-  lastObservedAt?: string | null;
-  providerStatus?: string | null;
-  offlineEvidence?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  offlineReceiptKey?: string | null;
-  recordedByStaff?: (string | null) | StaffUser;
-  status: 'pending' | 'authorized' | 'collected' | 'failed' | 'voided';
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payment-inbox".
  */
 export interface PaymentInbox {
@@ -1083,6 +1189,14 @@ export interface PayloadLockedDocument {
   id: string;
   document?:
     | ({
+        relationTo: 'refund-evidence';
+        value: string | RefundEvidence;
+      } | null)
+    | ({
+        relationTo: 'refund-operations';
+        value: string | RefundOperation;
+      } | null)
+    | ({
         relationTo: 'booking-changes';
         value: string | BookingChange;
       } | null)
@@ -1257,6 +1371,74 @@ export interface PayloadMigration {
   batch?: number | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "refund-evidence_select".
+ */
+export interface RefundEvidenceSelect<T extends boolean = true> {
+  semanticKey?: T;
+  payment?: T;
+  operation?: T;
+  environment?: T;
+  kind?: T;
+  providerOperationId?: T;
+  providerPaymentId?: T;
+  amountMinor?: T;
+  currency?: T;
+  providerStatus?: T;
+  source?: T;
+  observedAt?: T;
+  proof?: T;
+  workGeneration?: T;
+  sourceStaff?: T;
+  reviewerStaff?: T;
+  state?: T;
+  processedAt?: T;
+  reasonCode?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "refund-operations_select".
+ */
+export interface RefundOperationsSelect<T extends boolean = true> {
+  commandKey?: T;
+  fingerprint?: T;
+  origin?: T;
+  booking?: T;
+  payment?: T;
+  authorizedStaff?: T;
+  change?: T;
+  expectedRevision?: T;
+  method?: T;
+  state?: T;
+  amountMinor?: T;
+  currency?: T;
+  reason?: T;
+  evidenceReference?: T;
+  policySnapshot?: T;
+  providerEnvironment?: T;
+  providerOperationId?: T;
+  providerStatus?: T;
+  actualAmountMinor?: T;
+  actualCurrency?: T;
+  resultProof?: T;
+  dispatchGeneration?: T;
+  dispatchedAt?: T;
+  observedAt?: T;
+  completedAt?: T;
+  reasonCode?: T;
+  reconcileSequence?: T;
+  nextReconcileAt?: T;
+  lastEvidence?: T;
+  settledByRefund?: T;
+  offlineEvidence?: T;
+  offlineReceiptKey?: T;
+  reviewerStaff?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
