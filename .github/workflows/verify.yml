@@ -1,0 +1,54 @@
+name: verify
+# Local-only verification: an isolated PostgreSQL service, synthetic secrets and no provider credentials.
+# Release, migrations against hosted databases and provider sandbox tests are separate, protected steps.
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: acornelia_test
+          POSTGRES_USER: acornelia
+          POSTGRES_PASSWORD: ci-isolated-database-password
+        ports: ['55432:5432']
+        options: >-
+          --health-cmd "pg_isready -U acornelia -d acornelia_test"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    env:
+      APP_ENV: test
+      APP_URL: http://127.0.0.1:3043
+      APP_OPERATION_MODE: normal
+      APP_RECOVERY_GENERATION: '1'
+      PAYLOAD_SECRET: ci-isolated-test-secret-not-for-deployment-000000000000
+      TEST_DATABASE_URL: postgresql://acornelia:ci-isolated-database-password@127.0.0.1:55432/acornelia_test
+      DATABASE_URL: postgresql://acornelia:ci-isolated-database-password@127.0.0.1:55432/acornelia_test
+      PROPERTY_TIMEZONE: Asia/Manila
+      MAYA_ENVIRONMENT: sandbox
+      WORK_RUNNER_SECRET: ci-isolated-runner-secret-not-for-deployment-0000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - name: Unit, contract, integration and recovery rehearsal
+        run: pnpm test:recovery
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Browser checks (desktop and phone)
+        run: pnpm test:e2e

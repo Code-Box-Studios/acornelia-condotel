@@ -33,7 +33,7 @@ Tasks 01–26 are implemented locally. The latest full run passed 386 automated 
 - Task 24 implements the staff workspace: Today, room calendar, booking search and details, front-desk stay actions, internal notes, payments queue, enquiry follow-up and reports with protected CSV export. Validation is recorded below.
 - Task 25 implements account lifecycle commands with credential and link revocation and candidate retention rules. Validation is recorded below.
 - Task 26 implements the external recovery fence, reconcile stage and signed operator resumption. Validation is recorded below.
-- Tasks 27–29 remain pending.
+- Task 27 is partly done: target verification, CI workflow and Vercel build settings exist locally; real preview resources, provider sandbox checks and deployment evidence need authorization. Tasks 28–29 remain pending.
 
 ## Decision status
 
@@ -241,3 +241,9 @@ Task 26 adds `assertOperationAllowed` and `authorizeResumption`. The external fe
 Validation: `pnpm test:recovery` passed all 386 automated checks in 42 files, and all 110 Chromium desktop/mobile checks passed with every protected route behind the fence. Four unit cases cover the fence rules. The rehearsal copies the test database as a backup, changes a password and revokes a link afterwards, restores the copy by swapping database names, and shows sign-in and the private link refused with 503, no payment or email sent, resumption refused in normal mode and with a signature over different evidence, and the old password and link refused with 401 after authorized resumption, with no unsent outbound work left queued. A reconcile-stage case reads Maya for a collection without any money call. The operator scripts' refusal paths were run. Lint, TypeScript, diff whitespace, the development migration and the optimized build passed. No real backup, provider or account was involved.
 
 The named operator, backup provider, recovery targets, hosted media restore and a production-like rehearsal remain Decision 10 and Task 27 gates.
+
+## Deployment target verification — November 19, 2026
+
+Task 27's local part adds `verifyTarget` (`scripts/verify-target.ts`), the `verify` CI workflow and a minimal `vercel.json`; see the [operations guide](deployment.md#deployment-target-verification-and-ci--november-19-2026). Four unit cases cover the named check (a preview using the production database or live Maya is refused), an accepted isolated preview that reports no secrets, swapped environments, a short runner secret, a mismatched migration project, HTTP origins, local preview databases and the production rules. The CI workflow has not run yet.
+
+The remaining Task 27 steps use real Supabase, Vercel, Maya, Brevo and storage accounts and are paused until the owner or developer authorizes them. Tasks 28 (acceptance and UAT) and 29 (release and handover) need the owner.
