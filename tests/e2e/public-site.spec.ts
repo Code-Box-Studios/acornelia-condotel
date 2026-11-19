@@ -92,6 +92,25 @@ test('returns keyboard focus after closing room photos with Escape',async({page}
   }finally{await store.remove(actor,image.id)}
 })
 
+test('presents the selected Bright resort design with a centred masthead, panoramic photo and floating search',async({page},testInfo)=>{
+  await h.seed('room-types',{_status:'published',name:'A second fixture room',slug:'second-fixture',description:'Another sample room',maxGuests:2,bedDescription:'One sample bed',synthetic:true})
+  await page.goto('/')
+  await expect(page.locator('html')).toHaveAttribute('data-design','bright')
+  const headline=page.locator('.hero h1')
+  await expect(headline).toContainText('A little escape.');await expect(headline).toContainText('A brighter day.')
+  expect(await page.locator('.hero-copy').evaluate(element=>getComputedStyle(element).textAlign)).toBe('center')
+  const visual=(await page.locator('.hero-visual').boundingBox())!,search=(await page.locator('#find-stay').boundingBox())!
+  if(testInfo.project.name==='desktop'){
+    expect(visual.width/visual.height).toBeGreaterThan(2)
+    // The date search floats over the lower edge of the panoramic photo.
+    expect(search.y).toBeLessThan(visual.y+visual.height)
+    const cards=page.locator('.rooms-grid .room-card'),first=(await cards.nth(0).boundingBox())!,second=(await cards.nth(1).boundingBox())!
+    expect(second.y-first.y).toBeGreaterThan(40)
+  }else{
+    expect(search.y).toBeGreaterThanOrEqual(visual.y+visual.height)
+  }
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
+})
 test('keeps key text and button colors readable in both themes',async({page})=>{
   await page.goto('/')
   for(const theme of ['light','dark']){

@@ -287,3 +287,15 @@ Task 28's local part adds the [acceptance requirements register](../acceptance/r
 Run against commit `08fb870` in `preview` before any evidence was recorded, the checker listed 68 problems: 50 automated evidence references without a recorded result, 12 missing hosted or human checks, and 6 open release blockers. That is the expected result, not a defect. On `cce6c3f`, after both suites passed locally (414 checks in 47 files and 116 browser checks) and the 26 register test files were recorded, it listed 18: the 12 hosted or human checks and the 6 blockers ([run record](../acceptance/evidence.md#acceptance-check-runs)). Those local runs also exposed two test defects, now fixed: the test database reset could lose a deadlock to a request still finishing from the previous test, and the booking-history browser check asserted before its navigation finished.
 
 The cross-role acceptance journey test (`tests/e2e/acceptance.spec.ts`) waits for the owner's approved rules. Owner decisions, the hosted Task 27 steps, staff training, UAT and Client acceptance remain, and the register lists them as release blockers.
+
+## Bright resort guest design — November 19, 2026
+
+The user selected D-07 Bright resort from the [three-direction comparison](../superpowers/specs/2026-11-05-acornelia-design-options.md) and asked for it to be implemented for local testing. The owner's approval is still pending.
+
+- `src/config/design.ts` names the active design and each direction's sample copy. The site layout sets `data-design="bright"`, and changing `siteDesign` to `warm` restores Warm Boutique.
+- `src/styles/site.css` adds the Bright resort layer: sage and daylight colours for Day and Night, a centred masthead with the last headline line in the primary colour, a panoramic hero photo, the date search floating over the photo's lower edge, staggered room cards and rounder buttons, inputs and cards. Phones stack the search under the photo.
+- Small accent text uses `#8a6a1f` instead of the prototype's `#b89748`, which reached only about 2.6:1 contrast; the existing check requires 4.5:1.
+- Synthetic local content follows the selected design: the headline fallback, and `pnpm seed:development`, which replaces untouched sample copy from another design and keeps edited content. Approved owner content always wins.
+- Staff pages share the new colours; their layout is unchanged.
+
+Validation: a new browser check (`presents the selected Bright resort design…`) failed before the change and passes on desktop and phone. All 118 desktop/phone browser checks, lint and TypeScript passed.

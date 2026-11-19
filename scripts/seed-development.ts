@@ -33,11 +33,17 @@ async function image(filename:string,alt:string){
   if(existing.docs[0])return existing.docs[0].id
   return (await store.put(actor,{bytes:readFileSync(`fixtures/media/${filename}`),filename,mimeType:'image/webp',alt,source:`Local concept: ${filename}`,license:'Project-generated visual concept for local review; not verified property photography. See docs/design/acornelia-image-provenance.md.',accessClass:'public',synthetic:true})).id
 }
+const {siteDesign,siteDesigns}=await import('../src/config/design')
+const sample=siteDesigns[siteDesign].sample
 const property=await payload.findGlobal({slug:'property',overrideAccess:true})
 if(!property.name){
-  const hero=await image('acornelia-warm-boutique-v1.webp','Concept bedroom with warm linen, olive details and soft daylight')
-  await payload.updateGlobal({slug:'property',data:{_status:'published',name:'Acornelia',tagline:'Your own little pause',description:'Slow mornings. Time together. The simple pleasure of somewhere that feels like yours.',hero,synthetic:true},user,overrideAccess:false})
+  const hero=await image(sample.heroFile,sample.heroAlt)
+  await payload.updateGlobal({slug:'property',data:{_status:'published',name:'Acornelia',tagline:sample.tagline,description:sample.description,hero,synthetic:true},user,overrideAccess:false})
   await payload.updateGlobal({slug:'site-pages',data:{_status:'published',about:'A little room to slow down. This local preview introduces the proposed Acornelia experience. Property details and final photography are awaiting approval.',contact:'Planning a stay or gathering? Approved contact details will appear here.'},user,overrideAccess:false})
+}else if(property.synthetic&&property.tagline!==sample.tagline&&Object.values(siteDesigns).some(design=>design.sample.tagline===property.tagline&&design.sample.description===property.description)){
+  // Untouched sample copy from another design follows the selected design; edited content is preserved.
+  const hero=await image(sample.heroFile,sample.heroAlt)
+  await payload.updateGlobal({slug:'property',data:{_status:'published',tagline:sample.tagline,description:sample.description,hero},user,overrideAccess:false})
 }
 for(const room of [
   {slug:'boutique-stay',name:'The boutique stay',file:'acornelia-warm-boutique-v1.webp',alt:'Warm bedroom concept with textured fabrics and natural wood',description:'Soft textures, warm tones and room to settle in. A sample room for reviewing the booking experience.',bedDescription:'Sample double bed',maxGuests:2},
