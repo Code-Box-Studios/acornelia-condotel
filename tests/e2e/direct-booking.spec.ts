@@ -3,6 +3,7 @@ import {test,expect,type Page} from '@playwright/test'
 import {randomUUID} from 'node:crypto'
 import {createHarness,type TestHarness} from '../support/harness'
 import {checkoutFixture} from '../support/checkout-fixtures'
+import {pickStay} from '../support/calendar'
 let h:TestHarness
 const origin='http://127.0.0.1:3043',password='Synthetic-direct-browser-passphrase-946!'
 test.beforeAll(async()=>{h=await createHarness()});test.beforeEach(async()=>{await h.reset();h.clock.set(new Date().toISOString())});test.afterAll(async()=>{await h?.reset();await h?.close()})
@@ -12,7 +13,7 @@ async function setup(page:Page,restricted=false){
  return {...f,staff}
 }
 async function review(page:Page,roomTypeId:string,receipt:string){
- await page.goto('/staff/direct');await page.getByLabel('Room type',{exact:true}).selectOption(roomTypeId);await page.getByLabel('Arrival',{exact:true}).fill('2027-05-10');await page.getByLabel('Departure',{exact:true}).fill('2027-05-12');await page.getByLabel('Adults',{exact:true}).fill('2');await page.getByRole('button',{name:'Check stay price',exact:true}).click()
+ await page.goto('/staff/direct');await page.getByLabel('Room type',{exact:true}).selectOption(roomTypeId);await pickStay(page,'2027-05-10','2027-05-12',['Arrival','Departure']);await page.getByLabel('Adults',{exact:true}).fill('2');await page.getByRole('button',{name:'Check stay price',exact:true}).click()
  await expect(page.getByRole('heading',{name:'Stay price',exact:true})).toBeVisible();await expect(page.locator('.direct-price')).toContainText('₱200.00')
  await page.getByLabel('Booking contact name',{exact:true}).fill('Direct browser contact');await page.getByLabel('Booking contact email',{exact:true}).fill('dispatch-account@example.test');await page.getByLabel('Booking contact phone',{exact:true}).fill('+639171234567');await page.getByLabel('Staying guest name (if different)',{exact:true}).fill('Separate browser guest')
  await page.getByLabel('Amount received',{exact:true}).fill('200.00');await page.getByLabel('Receipt reference',{exact:true}).fill(receipt);await page.getByLabel('Payment evidence reference',{exact:true}).fill('synthetic-cashbook-review');await page.getByLabel('Guest agreement reference',{exact:true}).fill('synthetic-phone-agreement');await page.getByRole('checkbox').check()

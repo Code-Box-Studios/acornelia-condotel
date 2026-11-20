@@ -4,6 +4,7 @@ import {randomUUID} from 'node:crypto'
 import {createHarness,type TestHarness} from '../support/harness'
 import {confirmedOperationsFixture} from '../support/operations-fixtures'
 import {propertyToday} from '@/domain/shared/dates'
+import {dateField,fieldDate,pickDate} from '../support/calendar'
 import type {OperationsOverrides} from '../support/operations-policy'
 let h:TestHarness
 const origin='http://127.0.0.1:3043',password='Synthetic-front-desk-passphrase-946!'
@@ -53,6 +54,31 @@ test('resolves an open payment issue from the payments queue',async({page})=>{
  await page.getByLabel('Resolution',{exact:true}).selectOption('no-action-required');await page.getByLabel('Evidence reference',{exact:true}).fill('synthetic-reviewed-statement')
  await page.getByRole('button',{name:'Resolve issue',exact:true}).click();await expect(page.getByRole('status')).toContainText('Issue resolved')
  expect((await h.rows('payment-issues',{id:{equals:issue.id}}))[0]).toMatchObject({state:'resolved',resolutionCode:'no-action-required'})
+})
+test('chooses staff filter dates from the shared calendar',async({page})=>{
+ await signedIn(page)
+ const today=propertyToday('Asia/Manila'),tomorrow=new Date(Date.parse(today+'T00:00:00.000Z')+86400000).toISOString().slice(0,10)
+ await page.goto('/staff')
+ await expect(page.locator('input[type=date]')).toHaveCount(0)
+ await expect(dateField(page,'Property date')).toHaveAccessibleName('Property date '+fieldDate(today))
+ await pickDate(page,'Property date',tomorrow)
+ await expect(dateField(page,'Property date')).toBeFocused()
+ await page.getByRole('button',{name:'Show date',exact:true}).click()
+ await expect(page).toHaveURL(new RegExp('[?&]date='+tomorrow+'$'))
+ await expect(dateField(page,'Property date')).toHaveAccessibleName('Property date '+fieldDate(tomorrow))
+ await page.goto('/staff/bookings')
+ await pickDate(page,'Arrivals from','2027-05-10')
+ await expect(dateField(page,'Arrivals from')).toHaveAccessibleName('Arrivals from May 10, 2027')
+ await page.getByRole('button',{name:'Search',exact:true}).click()
+ await expect(page).toHaveURL(/[?&]from=2027-05-10(&|$)/)
+ // Optional filters can be emptied again.
+ await dateField(page,'Arrivals from').click();await page.getByRole('button',{name:'Clear date',exact:true}).click()
+ await expect(dateField(page,'Arrivals from')).toHaveAccessibleName('Arrivals from Select date')
+ await page.getByRole('button',{name:'Search',exact:true}).click()
+ await expect(page).toHaveURL(/[?&]from=(&|$)/)
+ await page.goto('/staff/reports?from=2027-05-01&to=2027-05-31')
+ await expect(page.locator('input[type=date]')).toHaveCount(0)
+ await expect(dateField(page,'From')).toHaveAccessibleName('From May 1, 2027');await expect(dateField(page,'To')).toHaveAccessibleName('To May 31, 2027')
 })
 test('exports a report with spreadsheet formulas neutralised only for approved roles',async({page})=>{
  const f=await signedIn(page,{role:'developer',contactName:'=HYPERLINK("https://example.test","open")'})

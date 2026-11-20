@@ -2,6 +2,7 @@ import '../support/env'
 import {test,expect} from '@playwright/test'
 import {createHarness,type TestHarness} from '../support/harness'
 import {createMediaStore} from '@/media/store'
+import {dateField,pickDate,pickStay} from '../support/calendar'
 let h:TestHarness
 const name='Public website fixture',slug='website-fixture'
 test.beforeAll(async()=>{h=await createHarness()})
@@ -37,11 +38,10 @@ test('discovers a room and preserves validated dates and guests in booking hando
   await page.getByRole('link',{name:'Explore A quiet fixture room'}).click()
   await expect(page).toHaveURL(new RegExp('/rooms/'+slug+'$'))
   await expect(page.getByRole('heading',{name:'A quiet fixture room',level:1})).toBeVisible()
-  await page.getByLabel('Check in', {exact:true}).fill('2027-05-10')
-  await page.getByLabel('Check out', {exact:true}).fill('2027-05-12')
+  await pickStay(page,'2027-05-10','2027-05-12')
   await page.getByLabel('Adults', {exact:true}).fill('2')
-  await expect(page.getByLabel('Check in',{exact:true})).toHaveValue('2027-05-10')
-  await expect(page.getByLabel('Check out',{exact:true})).toHaveValue('2027-05-12')
+  await expect(dateField(page,'Check in')).toHaveAccessibleName('Check in May 10, 2027')
+  await expect(dateField(page,'Check out')).toHaveAccessibleName('Check out May 12, 2027')
   await page.getByRole('button',{name:'Find my stay'}).click()
   await expect(page).toHaveURL(/\/book\?/)
   expect(new URL(page.url()).searchParams.get('arrival')).toBe('2027-05-10')
@@ -50,12 +50,18 @@ test('discovers a room and preserves validated dates and guests in booking hando
   await expect(page.getByRole('link',{name:'Plan your stay',exact:true})).toHaveCount(0)
   await expect(page.getByRole('heading',{name:'Your selected stay'})).toBeVisible()
 })
-test('rejects reversed dates without claiming availability',async({page})=>{
+test('asks for both dates and never reverses a stay without claiming availability',async({page})=>{
   await page.goto('/rooms/'+slug)
-  await page.getByLabel('Check in', {exact:true}).fill('2027-05-12')
-  await page.getByLabel('Check out', {exact:true}).fill('2027-05-10')
   await page.getByRole('button',{name:'Find my stay'}).click()
-  await expect(page.locator('main').getByRole('alert')).toContainText('Check out must be after check in')
+  await expect(page.locator('main').getByRole('alert')).toContainText('Choose your check-in and check-out dates.')
+  await pickStay(page,'2027-05-10','2027-05-12')
+  // A check-in on or after the chosen check-out starts a new stay instead of reversing the dates.
+  await pickDate(page,'Check in','2027-05-14')
+  await page.keyboard.press('Escape')
+  await expect(dateField(page,'Check in')).toHaveAccessibleName('Check in May 14, 2027')
+  await expect(dateField(page,'Check out')).toHaveAccessibleName('Check out Select date')
+  await page.getByRole('button',{name:'Find my stay'}).click()
+  await expect(page.locator('main').getByRole('alert')).toContainText('Choose your check-in and check-out dates.')
   expect(new URL(page.url()).pathname).toBe('/rooms/'+slug)
 })
 test('keeps public routes readable in both themes with reduced motion',async({page})=>{
